@@ -124,10 +124,11 @@ endif
 
 # macOS: Create .app bundle
 # Note: We clean dist directory completely to avoid PyQt5 framework symlink conflicts
+# Note: We use the existing spec file to preserve custom info_plist settings
 build-macos: install-deps
 	@echo "Cleaning previous build artifacts (required for macOS to avoid symlink conflicts)..."
 	@echo "Removing entire dist and build directories to avoid symlink conflicts..."
-	@rm -rf "$(DIST_DIR)" "$(BUILD_DIR)/$(APP_NAME)" "$(SPEC_FILE)"
+	@rm -rf "$(DIST_DIR)" "$(BUILD_DIR)/$(APP_NAME)"
 	@echo "Ensuring directories are fully removed..."
 	@if [ -d "$(DIST_DIR)" ]; then \
 		echo "Warning: dist directory still exists, forcing removal..."; \
@@ -139,16 +140,15 @@ build-macos: install-deps
 		chmod -R u+w "$(BUILD_DIR)/$(APP_NAME)" 2>/dev/null || true; \
 		rm -rf "$(BUILD_DIR)/$(APP_NAME)"; \
 	fi
-	@echo "Building $(APP_NAME) macOS application bundle..."
+	@echo "Building $(APP_NAME) macOS application bundle using $(SPEC_FILE)..."
+	@if [ ! -f "$(SPEC_FILE)" ]; then \
+		echo "Error: $(SPEC_FILE) not found. Please ensure the spec file exists."; \
+		exit 1; \
+	fi
 	$(PYINSTALLER) \
-		--name=$(APP_NAME) \
-		--windowed \
 		--clean \
 		--noconfirm \
-		--icon=$(ICON_PATH) \
-		--osx-bundle-identifier=com.hp12c.emulator \
-		$(COMMON_ARGS) \
-		$(MAIN_SCRIPT)
+		$(SPEC_FILE)
 	@echo "Build complete! Application bundle is in $(DIST_DIR)/$(APP_NAME).app"
 	@echo "You can run it with: open $(DIST_DIR)/$(APP_NAME).app"
 
