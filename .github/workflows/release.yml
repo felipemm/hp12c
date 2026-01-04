@@ -196,16 +196,17 @@ jobs:
 
             ### Downloads
 
-            - **macOS**: Download `${{ steps.tag.outputs.tag }}-macos.zip` and extract the `hp12c.app` bundle
+            - **macOS**: Download `${{ steps.tag.outputs.tag }}-macos.dmg` (recommended) or `${{ steps.tag.outputs.tag }}-macos.zip` and extract the `hp12c.app` bundle
             - **Windows**: Download `${{ steps.tag.outputs.tag }}-windows.zip` and extract `hp12c.exe`
             - **Linux**: Download `${{ steps.tag.outputs.tag }}-linux.zip` and extract the executable
 
             ### Installation
 
-            - **macOS**: Drag `hp12c.app` to your Applications folder
+            - **macOS**: Open the `.dmg` file and drag `hp12c.app` to your Applications folder, or extract the `.zip` file
             - **Windows**: Run `hp12c.exe` from the extracted location
             - **Linux**: Make executable with `chmod +x hp12c` and run `./hp12c`
           files: |
+            artifacts/hp12c-macos/*.dmg
             artifacts/hp12c-macos/*.zip
             artifacts/hp12c-windows/*.zip
             artifacts/hp12c-linux/*.zip
