@@ -194,7 +194,7 @@ class DisplayWidget(PyQt5ImagePanel):
             )
 
 
-class PyQt5MainWindow(BaseMainWindow, QMainWindow, metaclass=ABCQMainWindowMeta):  # type: ignore[misc]
+class PyQt5MainWindow(BaseMainWindow, QMainWindow, metaclass=ABCQMainWindowMeta):  # type: ignore[metaclass]
     """PyQt5 implementation of main calculator window."""
 
     def __init__(self, controller):

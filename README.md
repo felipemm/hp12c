@@ -3,7 +3,7 @@
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-GPL--3.0--or--later-green)](LICENSE)
 [![Version](https://img.shields.io/github/v/release/felipemm/hp12c)](https://github.com/felipemm/hp12c/releases)
-[![codecov](https://codecov.io/gh/felipemm/hp12c/branch/main/graph/badge.svg)](https://codecov.io/gh/felipemm/hp12c)
+![Coverage](https://img.shields.io/badge/coverage-53%25-yellow)
 
 This is a Python port of the Java HP12C calculator emulator, originally decompiled from `hp12c.jar`.
 

@@ -210,11 +210,23 @@ endif
 
 test-cov:
 	@echo "Running tests with coverage..."
-ifeq ($(USE_UV),true)
-	uv run pytest --cov=hp12c --cov-report=html --cov-report=term tests/
-else
-	$(PYTHON) -m pytest --cov=hp12c --cov-report=html --cov-report=term tests/
-endif
+	@if [ "$(USE_UV)" = "true" ]; then \
+		uv run pytest --cov=hp12c --cov-report=html --cov-report=term tests/ 2>&1 | tee /tmp/pytest_output.txt; \
+		COVERAGE=$$(sed -n 's/.*Total coverage: \([0-9.]*\)%.*/\1/p' /tmp/pytest_output.txt | head -1); \
+		if [ -n "$$COVERAGE" ]; then \
+			echo "Updating coverage badge in README.md..."; \
+			$(PYTHON) scripts/update_coverage_badge.py $$COVERAGE; \
+		fi; \
+		rm -f /tmp/pytest_output.txt; \
+	else \
+		$(PYTHON) -m pytest --cov=hp12c --cov-report=html --cov-report=term tests/ 2>&1 | tee /tmp/pytest_output.txt; \
+		COVERAGE=$$(sed -n 's/.*Total coverage: \([0-9.]*\)%.*/\1/p' /tmp/pytest_output.txt | head -1); \
+		if [ -n "$$COVERAGE" ]; then \
+			echo "Updating coverage badge in README.md..."; \
+			$(PYTHON) scripts/update_coverage_badge.py $$COVERAGE; \
+		fi; \
+		rm -f /tmp/pytest_output.txt; \
+	fi
 	@echo "Coverage report generated in htmlcov/index.html"
 
 lint:
