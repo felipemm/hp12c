@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-01-04
+
 ## [0.1.1] - 2026-01-04
 
 ### Added
@@ -62,6 +64,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multiple skin themes
 
 [0.1.1]: https://github.com/felipemm/hp12c/releases/tag/v0.1.1
-[Unreleased]: https://github.com/felipemm/hp12c/compare/v0.1.1...HEAD
+[0.1.2]: https://github.com/felipemm/hp12c/releases/tag/v0.1.2
+[Unreleased]: https://github.com/felipemm/hp12c/compare/v0.1.2...HEAD
+
 
 [0.1.0]: https://github.com/felipemm/hp12c/releases/tag/v0.1.0

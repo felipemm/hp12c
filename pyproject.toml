@@ -1,6 +1,6 @@
 [project]
 name = "hp12c"
-version = "0.1.1"
+version = "0.1.2"
 description = "HP12C Financial Calculator Emulator - A complete Python port with RPN stack, financial calculations, and dual UI framework support"
 readme = "README.md"
 requires-python = ">=3.10"

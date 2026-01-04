@@ -8,5 +8,5 @@ A complete Python port of the HP12C calculator with:
 - Dual UI framework support (Tkinter and PyQt5)
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __author__ = "HP12C Calculator Contributors"
