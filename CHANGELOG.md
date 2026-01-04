@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-01-04
+
 ### Added
 - Comprehensive test suite with unit and integration tests
 - Logging infrastructure replacing all print statements
@@ -59,5 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multiple language support
 - Multiple skin themes
 
-[Unreleased]: https://github.com/your-username/hp12c/compare/v0.1.0...HEAD
+[0.1.1]: https://github.com/your-username/hp12c/releases/tag/v0.1.1
+[Unreleased]: https://github.com/your-username/hp12c/compare/v0.1.1...HEAD
+
 [0.1.0]: https://github.com/your-username/hp12c/releases/tag/v0.1.0
