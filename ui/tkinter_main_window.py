@@ -7,7 +7,7 @@ import tkinter as tk
 import tkinter.font as tkfont
 from pathlib import Path
 from typing import Dict, Optional, Tuple
-from PIL import Image, ImageTk, ImageFont
+from PIL import Image, ImageTk, ImageFont, ImageDraw
 import xml.etree.ElementTree as ET
 
 from hp12c_python_java_port.calculator.key import Key
@@ -37,11 +37,15 @@ class TkinterMainWindow(BaseMainWindow):
         self._image_map_pressed: Dict[str, Image.Image] = {}
         self._bg_image = None
         self._font = None  # PIL ImageFont (for image rendering if needed)
-        self._tk_font = None  # Tkinter font (for Canvas text items)
-        self._flag_font = None  # Tkinter font for flags
+        self._flag_pil_font = None  # PIL ImageFont for flags
+        self._tk_font = None  # Tkinter font (for Canvas text items - kept for compatibility)
+        self._flag_font = None  # Tkinter font for flags (kept for compatibility)
         self._cfg = None
         self._skin = None
         self._size = 1.0  # Size multiplier
+        self._display_text = ""  # Current display text
+        self._flag_text = ""  # Current flag text
+        self._composite_image = None  # Background image with text rendered
 
         # Size variables (defaults, will be scaled)
         self._hbot = 40
@@ -207,11 +211,11 @@ class TkinterMainWindow(BaseMainWindow):
         self._rdis = 100
         self._tfdis = 0
         self._lfdis = 0
-        self._bfdis = 10
+        self._bfdis = 0
         self._rfdis = 100
         # LCD position on background image
         self._lcd_x = 200
-        self._lcd_y = 18
+        self._lcd_y = 35
 
     def set_size(self, size: float):
         """Set window size multiplier (same as Java setSize - resets to defaults first, then scales)."""
@@ -250,12 +254,8 @@ class TkinterMainWindow(BaseMainWindow):
         # If window is already built, reload fonts with new size
         if self._main_panel is not None:
             self.load_font()
-            # Update display text items with new fonts
-            if isinstance(self._main_panel, tk.Canvas):
-                if self._display_text_id is not None and self._tk_font:
-                    self._main_panel.itemconfig(self._display_text_id, font=self._tk_font)
-                if self._flag_text_id is not None and self._flag_font:
-                    self._main_panel.itemconfig(self._flag_text_id, font=self._flag_font)
+            # Re-render display with new fonts
+            self._render_display()
 
     def create_image_icon(self, w: int, h: int, path: str) -> Optional[Image.Image]:
         """Create scaled image icon."""
@@ -383,6 +383,14 @@ class TkinterMainWindow(BaseMainWindow):
                 flag_font_size = max(7, int(self._font_size / 4.0))  # Reduced from /3.0 to /4.0 for smaller size
                 if flag_font_size < 7:
                     flag_font_size = 7
+                # Create PIL font for flag display
+                if self._skin_font_path.exists():
+                    self._flag_pil_font = ImageFont.truetype(str(self._skin_font_path), flag_font_size)
+                    print(f"Created PIL flag font: size: {flag_font_size}")
+                else:
+                    self._flag_pil_font = ImageFont.load_default()
+                    print(f"Created PIL flag font (fallback): default font, size: {flag_font_size}")
+                # Also create Tkinter font for compatibility (though we'll use PIL)
                 if self._tk_font:
                     try:
                         font_family = self._tk_font.cget("family")
@@ -402,6 +410,9 @@ class TkinterMainWindow(BaseMainWindow):
                 flag_font_size = max(7, int(self._font_size / 4.0))  # Reduced from /3.0 to /4.0 for smaller size
                 if flag_font_size < 7:
                     flag_font_size = 7
+                # Create PIL font for flag display
+                self._flag_pil_font = ImageFont.load_default()
+                print(f"Created PIL flag font (fallback): default font, size: {flag_font_size}")
                 self._flag_font = tkfont.Font(family="Courier", size=flag_font_size)
                 print(f"Created flag font (fallback): Courier, size: {flag_font_size}")
         except Exception as e:
@@ -413,6 +424,9 @@ class TkinterMainWindow(BaseMainWindow):
             flag_font_size = max(7, int(self._font_size / 4.0))  # Reduced from /3.0 to /4.0 for smaller size
             if flag_font_size < 7:
                 flag_font_size = 7
+            # Create PIL font for flag display
+            self._flag_pil_font = ImageFont.load_default()
+            print(f"Created PIL flag font (error fallback): default font, size: {flag_font_size}")
             self._flag_font = tkfont.Font(family="Courier", size=flag_font_size)
             print(f"Created flag font (error fallback): Courier, size: {flag_font_size}")
 
@@ -546,125 +560,82 @@ class TkinterMainWindow(BaseMainWindow):
         self._main_panel.pack(fill=tk.BOTH, expand=True)
         self._main_panel.config(width=self._wmainpan, height=self._hmainpan)
 
-        # Force update of background image if it exists
+        # Initialize display text
+        self._display_text = ""
+        self._flag_text = ""
+
+        # Create composite image with text rendered using PIL
+        # We'll render text onto the background image and update it when text changes
         if self._bg_image:
-            self._main_panel.set_image_obj(self._bg_image)
-            # Force a configure event to update the display
-            self._main_panel.update_idletasks()
-
-        # Create display panel - use Canvas text items for true transparency
-        # Since Entry widgets can't be transparent, we'll use Canvas text items instead
-        # Store text item IDs for updates
-        self._display_text_id = None
-        self._flag_text_id = None
-
-        # Create display text directly on Canvas (transparent background)
-        # Position text to match the LCD display area on the background image
-        # LCD is positioned at lcd_x, lcd_y on the background image
-        # Text should be right-aligned within the LCD area
-        # Right edge of LCD area minus right padding for text alignment
-        display_x = self._lcd_x + self._wdis - self._rdis
-        # Vertically centered in the LCD area
-        display_y = self._lcd_y + self._hdis // 2
-
-        # Debug: print color and position info
-        print(f"Display color: {self._display_face_color}")
-        print(f"LCD position on image: x={self._lcd_x}, y={self._lcd_y}")
-        print(f"Display text position: x={display_x}, y={display_y}, wdis={self._wdis}, rdis={self._rdis}")
-
-        # Create text items on the Canvas for transparent display
-        if isinstance(self._main_panel, tk.Canvas):
-            # Main display text - right-aligned, vertically centered
-            # Use Tkinter font for Canvas text items
-            if self._tk_font:
-                display_font = self._tk_font
-                # Debug: verify font is set
-                try:
-                    font_family = display_font.cget("family")
-                    font_size = display_font.cget("size")
-                    print(f"Using font for display: family={font_family}, size={font_size}")
-                except:
-                    print(f"Warning: Could not get font properties")
-            else:
-                display_font = tkfont.Font(family="Courier", size=self._font_size)
-                print(f"Using default Courier font (tk_font not set)")
-
-            # Create text with font - Tkinter Canvas text rendering
-            # Note: Tkinter's Canvas text rendering may differ from Java's Graphics2D
-            # Java uses anti-aliasing which we can't directly control in Tkinter Canvas
-            # The font family name approach works, but rendering may look different
-            # due to different rendering engines and system font rendering settings
-            self._display_text_id = self._main_panel.create_text(
-                display_x, display_y,
-                anchor=tk.E,  # East anchor for right alignment, centered vertically
-                text="",
-                fill=self._display_face_color,
-                font=display_font
-            )
-
-            # Verify the font was applied
-            try:
-                applied_font = self._main_panel.itemcget(self._display_text_id, "font")
-                print(f"Applied font to display text: {applied_font}")
-            except:
-                pass
-
-            # Flag display text - right-aligned, positioned below main display
-            flag_y = self._lcd_y + self._hdis + self._bfdis + self._hfdis // 2  # Below main display, vertically centered
-            flag_x = self._lcd_x + self._wfdis - self._rfdis  # Right edge minus right padding
-            # Use flag font created in load_font()
-            if self._flag_font:
-                flag_font = self._flag_font
-            else:
-                # Fallback if flag font wasn't created
-                flag_font_size = max(7, int(self._font_size / 4.0))
-                if flag_font_size < 7:
-                    flag_font_size = 7
-                flag_font = tkfont.Font(family="Courier", size=flag_font_size)
-            self._flag_text_id = self._main_panel.create_text(
-                flag_x, flag_y,
-                anchor=tk.E,  # East anchor for right alignment
-                text="",
-                fill=self._display_face_color,
-                font=flag_font
-            )
-
-            # Don't create Entry widgets when using Canvas text items
-            # Entry widgets can't be children of Canvas, so we skip them
-            self._display = None
-            self._flag_display = None
-        else:
-            # Fallback: use Entry widgets if main_panel is not a Canvas
-            self._display_panel = tk.Frame(self._main_panel)
-            self._display_panel.place(x=0, y=0, width=self._wmainpan, height=self._hdispan)
-
-            display_chars = max(10, self._wdis // 8)
-            self._display = TextField(self._display_panel, font=self._font)
-            self._display.config(fg=self._display_face_color,
-                                bg=self._display_bg_color,
-                                highlightthickness=0,
-                                borderwidth=0,
-                                insertbackground=self._display_face_color,
-                                state='readonly',
-                                width=display_chars,
-                                relief=tk.FLAT)
-            self._display.place(x=0, y=0, width=self._wdis, height=self._hdis)
-
-            flag_chars = max(10, self._wfdis // 8)
-            self._flag_display = TextField(self._display_panel,
-                                          font=('Courier', max(8, self._font_size // 3)))
-            self._flag_display.config(fg=self._display_face_color,
-                                     bg=self._display_bg_color,
-                                     highlightthickness=0,
-                                     borderwidth=0,
-                                     insertbackground=self._display_face_color,
-                                     state='readonly',
-                                     width=flag_chars,
-                                     relief=tk.FLAT)
-            self._flag_display.place(x=0, y=self._hdis, width=self._wfdis, height=self._hfdis)
+            self._render_display()
 
         # Build buttons with exact layout from Java
         self._build_buttons()
+
+    def _render_display(self):
+        """Render display text onto background image using PIL."""
+        if not self._bg_image:
+            return
+
+        # Create a copy of the background image to draw on
+        self._composite_image = self._bg_image.copy()
+        draw = ImageDraw.Draw(self._composite_image)
+
+        # Convert color string to RGB tuple
+        def hex_to_rgb(hex_str: str) -> Tuple[int, int, int]:
+            hex_str = hex_str.lstrip('#')
+            if len(hex_str) == 6:
+                return tuple(int(hex_str[i:i+2], 16) for i in (0, 2, 4))
+            return (0, 255, 0)  # Default green
+
+        display_color_rgb = hex_to_rgb(self._display_face_color)
+
+        # Calculate text positions
+        # Main display text - right-aligned, vertically centered
+        display_x = self._lcd_x + self._wdis - self._rdis
+        display_y = self._lcd_y + self._hdis // 2
+
+        # Flag display text - right-aligned, positioned below main display
+        flag_y = self._lcd_y + self._hdis + self._bfdis + self._hfdis // 2
+        flag_x = self._lcd_x + self._wfdis - self._rfdis
+
+        # Draw main display text (right-aligned)
+        if self._font and self._display_text:
+            # Get text bounding box to calculate right alignment
+            bbox = draw.textbbox((0, 0), self._display_text, font=self._font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            # Calculate right-aligned position (x is the right edge, subtract text width)
+            text_x = display_x - text_width
+            text_y = display_y - text_height // 2
+            # Draw text
+            draw.text(
+                (text_x, text_y),
+                self._display_text,
+                fill=display_color_rgb,
+                font=self._font
+            )
+
+        # Draw flag display text (right-aligned)
+        if self._flag_pil_font and self._flag_text:
+            # Get text bounding box to calculate right alignment
+            bbox = draw.textbbox((0, 0), self._flag_text, font=self._flag_pil_font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            # Calculate right-aligned position (x is the right edge, subtract text width)
+            text_x = flag_x - text_width
+            text_y = flag_y - text_height // 2
+            # Draw text
+            draw.text(
+                (text_x, text_y),
+                self._flag_text,
+                fill=display_color_rgb,
+                font=self._flag_pil_font
+            )
+
+        # Update the display with the composite image
+        if self._main_panel:
+            self._main_panel.set_image_obj(self._composite_image)
 
     def _build_buttons(self):
         """Build buttons matching Java layout exactly."""
@@ -775,39 +746,18 @@ class TkinterMainWindow(BaseMainWindow):
             executor = self._controller.get_executor()
             if executor:
                 display_str = executor.get_display().get_string()
+                flag_str = executor.get_flags().get_display_str()
 
-                # Update Canvas text items if using transparent display
-                if isinstance(self._main_panel, tk.Canvas) and self._display_text_id is not None:
-                    self._main_panel.itemconfig(self._display_text_id, text=display_str)
+                # Remove extra spaces to make it more compact
+                # flag_str = ' '.join(flag_str.split())  # Collapse multiple spaces to single space
+                print(f"Flag display string: '{flag_str}' (length: {len(flag_str) if flag_str else 0})")  # Debug output
 
-                    if self._flag_text_id is not None:
-                        flag_str = executor.get_flags().get_display_str()
-                        # Remove extra spaces to make it more compact
-                        # flag_str = ' '.join(flag_str.split())  # Collapse multiple spaces to single space
-                        print(f"Flag display string: '{flag_str}' (length: {len(flag_str) if flag_str else 0})")  # Debug output
-                        if flag_str:
-                            self._main_panel.itemconfig(self._flag_text_id, text=flag_str)
-                        else:
-                            # Set empty string explicitly to clear previous flags
-                            self._main_panel.itemconfig(self._flag_text_id, text="")
-                else:
-                    # Fallback: update Entry widgets
-                    if self._display:
-                        self._display.config(state='normal')
-                        self._display.delete(0, tk.END)
-                        self._display.insert(0, display_str)
-                        self._display.config(state='readonly')
+                # Update text strings
+                self._display_text = display_str
+                self._flag_text = flag_str if flag_str else ""
 
-                    if self._flag_display:
-                        flag_str = executor.get_flags().get_display_str()
-                        self._flag_display.config(state='normal')
-                        self._flag_display.delete(0, tk.END)
-                        if flag_str:
-                            self._flag_display.insert(0, flag_str)
-                        else:
-                            # Set empty string explicitly to clear previous flags
-                            self._flag_display.insert(0, "")
-                        self._flag_display.config(state='readonly')
+                # Re-render the display with PIL
+                self._render_display()
 
     def show(self):
         """Show window."""
