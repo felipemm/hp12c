@@ -54,9 +54,16 @@ jobs:
         run: |
           cd dist
           # Create a zip file of the .app bundle
-          zip -r ${GITHUB_REF_NAME}-macos.zip hp12c.app
-          # Also create a .dmg if needed (optional)
-          hdiutil create -volname "HP12C" -srcfolder hp12c.app -ov -format UDZO ${GITHUB_REF_NAME}-macos.dmg
+          zip -r hp12c-${GITHUB_REF_NAME}-macos.zip hp12c.app
+          # Create installer .dmg with Applications folder link
+          DMG_TEMP="dmg_temp"
+          mkdir -p "$DMG_TEMP"
+          cp -R hp12c.app "$DMG_TEMP/"
+          ln -s /Applications "$DMG_TEMP/Applications"
+          # Create the .dmg
+          hdiutil create -volname "HP12C" -srcfolder "$DMG_TEMP" -ov -format UDZO hp12c-${GITHUB_REF_NAME}-macos.dmg
+          # Clean up temporary directory
+          rm -rf "$DMG_TEMP"
 
       - name: Prepare artifacts (Windows)
         if: matrix.platform == 'windows'
@@ -64,7 +71,7 @@ jobs:
         run: |
           cd dist
           if (Test-Path "hp12c.exe") {
-            Compress-Archive -Path hp12c.exe -DestinationPath "${env:GITHUB_REF_NAME}-windows.zip" -Force
+            Compress-Archive -Path hp12c.exe -DestinationPath "hp12c-$env:GITHUB_REF_NAME-windows.zip" -Force
           }
 
       - name: Prepare artifacts (Linux)
@@ -73,9 +80,9 @@ jobs:
           cd dist
           # Create a zip file of the executable
           if [ -d "hp12c" ]; then
-            zip -r ${GITHUB_REF_NAME}-linux.zip hp12c/
+            zip -r hp12c-${GITHUB_REF_NAME}-linux.zip hp12c/
           elif [ -f "hp12c" ]; then
-            zip ${GITHUB_REF_NAME}-linux.zip hp12c
+            zip hp12c-${GITHUB_REF_NAME}-linux.zip hp12c
           fi
 
       - name: Upload macOS artifact
@@ -196,9 +203,9 @@ jobs:
 
             ### Downloads
 
-            - **macOS**: Download `${{ steps.tag.outputs.tag }}-macos.dmg` (recommended) or `${{ steps.tag.outputs.tag }}-macos.zip` and extract the `hp12c.app` bundle
-            - **Windows**: Download `${{ steps.tag.outputs.tag }}-windows.zip` and extract `hp12c.exe`
-            - **Linux**: Download `${{ steps.tag.outputs.tag }}-linux.zip` and extract the executable
+            - **macOS**: Download `hp12c-${{ steps.tag.outputs.tag }}-macos.dmg` (recommended) or `hp12c-${{ steps.tag.outputs.tag }}-macos.zip` and extract the `hp12c.app` bundle
+            - **Windows**: Download `hp12c-${{ steps.tag.outputs.tag }}-windows.zip` and extract `hp12c.exe`
+            - **Linux**: Download `hp12c-${{ steps.tag.outputs.tag }}-linux.zip` and extract the executable
 
             ### Installation
 
