@@ -1,0 +1,14 @@
+<list>
+    <item>
+        <id>aurum</id>
+        <ds>Gold</ds>
+    </item>
+    <item>
+        <id>argentum</id>
+        <ds>Silver</ds>
+    </item>
+    <item>
+        <id>nigrum</id>
+        <ds>Black</ds>
+    </item>
+</list>

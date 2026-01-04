@@ -1,0 +1,18 @@
+{
+  "version": "0.2.8",
+  "size": 0.75,
+  "xpos": 453,
+  "ypos": 147,
+  "skin": "nigrum",
+  "lang": "en",
+  "stksize": 4,
+  "memsize": 20,
+  "prgsize": 100,
+  "c": 0,
+  "dmy": 0,
+  "com": 0,
+  "alg": 0,
+  "beg": 0,
+  "fix": 9,
+  "mode": 0
+}
