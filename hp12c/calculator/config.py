@@ -3,6 +3,7 @@ Configuration for HP12C calculator.
 Ported from Java Configuration.java.
 """
 
+from hp12c import __version__
 from hp12c.model.finance_memory import FinanceMemory
 from hp12c.model.general_memory import GeneralMemory
 from hp12c.model.program_memory import ProgramMemory
@@ -38,7 +39,7 @@ class KeyMapItem:
 class Configuration:
     """Calculator configuration."""
 
-    VERSION = "0.2.8"
+    VERSION = __version__
     DEFAULT_SKIN = "nigrum"
 
     DEFAULT_KEYMAP = [
