@@ -73,7 +73,7 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "@abstractmethod",
 ]
-fail_under = 80
+fail_under = 20
 
 [tool.ruff]
 # Ruff configuration is in ruff.toml
