@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `.env.sample` file with environment variable documentation
+
+### Changed
+- Build process now regenerates and patches `info_plist` at build time
+- Improved `patch_spec_info_plist.py` regex pattern matching for better info_plist handling
+- Preserved spec file with info_plist configuration
+
+### Improved
+- Added `janitor` Makefile target for comprehensive cleanup while preserving dist files
+- Fixed trailing newlines in data JSON files (cfg.json, mem.json)
+- Updated .gitignore to exclude *.spec files
+
 ## [0.1.2] - 2026-01-04
 
 ### Changed
