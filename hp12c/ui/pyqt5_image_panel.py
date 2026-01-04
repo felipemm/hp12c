@@ -3,7 +3,6 @@ PyQt5 image panel widget for HP12C calculator.
 Equivalent to Tkinter ImagePanel but using PyQt5.
 """
 
-
 from PIL import Image
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPainter, QPixmap

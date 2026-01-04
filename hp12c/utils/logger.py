@@ -24,7 +24,7 @@ def setup_logging(
     """
     if log_format is None:
         log_format = (
-            "%(asctime)s - %(name)s - %(levelname)s - " "%(filename)s:%(lineno)d - %(message)s"
+            "%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
         )
 
     # Create formatter

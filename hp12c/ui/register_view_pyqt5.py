@@ -3,7 +3,6 @@ Register view window for PyQt5.
 Shows all calculator registers (Stack, Finance, General Memory).
 """
 
-
 from PyQt5.QtWidgets import (
     QDialog,
     QGridLayout,
@@ -98,7 +97,7 @@ class RegisterViewWindow(QDialog):
         # Buttons
         button_layout = QHBoxLayout()
         refresh_btn = QPushButton("Refresh")
-        refresh_btn.clicked.connect(self.update)
+        refresh_btn.clicked.connect(self.refresh_registers)
         button_layout.addWidget(refresh_btn)
         button_layout.addStretch()
         close_btn = QPushButton("Close")
@@ -107,9 +106,9 @@ class RegisterViewWindow(QDialog):
         layout.addLayout(button_layout)
 
         # Initial update
-        self.update()
+        self.refresh_registers()
 
-    def update(self) -> None:
+    def refresh_registers(self) -> None:
         """Update register values from calculator."""
         if not self._calculator:
             return

@@ -3,7 +3,6 @@ Controller to connect calculator, window, and persistence.
 Ported from Java Controller.java.
 """
 
-
 from hp12c.calculator.calculator import Calculator
 from hp12c.calculator.config import Configuration
 from hp12c.calculator.key import Key

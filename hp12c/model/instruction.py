@@ -3,7 +3,6 @@ Instruction class for history.
 Ported from Java Instruction.java.
 """
 
-
 from hp12c.model.stack import Stack
 from hp12c.model.step import Step
 
