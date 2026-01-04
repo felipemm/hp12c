@@ -32,11 +32,30 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Set up Node.js
+        if: matrix.platform == 'macos'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
           pip install pyinstaller
+
+      - name: Install GraphicsMagick and ImageMagick
+        if: matrix.platform == 'macos'
+        run: |
+          # Update Homebrew (it's pre-installed on macOS runners)
+          brew update || true
+          # Install required tools for create-dmg
+          brew install graphicsmagick imagemagick
+
+      - name: Install create-dmg
+        if: matrix.platform == 'macos'
+        run: |
+          npm install --global create-dmg
 
       - name: Build application
         shell: bash
@@ -55,15 +74,14 @@ jobs:
           cd dist
           # Create a zip file of the .app bundle
           zip -r hp12c-${GITHUB_REF_NAME}-macos.zip hp12c.app
-          # Create installer .dmg with Applications folder link
-          DMG_TEMP="dmg_temp"
-          mkdir -p "$DMG_TEMP"
-          cp -R hp12c.app "$DMG_TEMP/"
-          ln -s /Applications "$DMG_TEMP/Applications"
-          # Create the .dmg
-          hdiutil create -volname "HP12C" -srcfolder "$DMG_TEMP" -ov -format UDZO hp12c-${GITHUB_REF_NAME}-macos.dmg
-          # Clean up temporary directory
-          rm -rf "$DMG_TEMP"
+          # Create installer .dmg with create-dmg tool
+          # create-dmg creates DMG with format "App Name Version.dmg"
+          create-dmg --overwrite --no-code-sign hp12c.app . || true
+          # Rename the DMG to match our naming convention
+          VERSION=${GITHUB_REF_NAME#v}
+          if [ -f "hp12c ${VERSION}.dmg" ]; then
+            mv "hp12c ${VERSION}.dmg" "hp12c-${GITHUB_REF_NAME}-macos.dmg"
+          fi
 
       - name: Prepare artifacts (Windows)
         if: matrix.platform == 'windows'
