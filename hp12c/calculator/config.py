@@ -3,7 +3,6 @@ Configuration for HP12C calculator.
 Ported from Java Configuration.java.
 """
 
-
 from hp12c.model.finance_memory import FinanceMemory
 from hp12c.model.general_memory import GeneralMemory
 from hp12c.model.program_memory import ProgramMemory

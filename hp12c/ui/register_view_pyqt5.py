@@ -3,7 +3,6 @@ Register view window for PyQt5.
 Shows all calculator registers (Stack, Finance, General Memory).
 """
 
-
 from PyQt5.QtWidgets import (
     QDialog,
     QGridLayout,

@@ -3,7 +3,6 @@ Program memory for HP12C calculator.
 Ported from Java ProgramMemory.java.
 """
 
-
 from hp12c.model.step import Step
 
 

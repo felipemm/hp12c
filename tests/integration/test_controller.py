@@ -1,6 +1,5 @@
 """Integration tests for Controller class."""
 
-
 import pytest
 
 from hp12c.calculator.controller import Controller

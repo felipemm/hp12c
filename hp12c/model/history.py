@@ -3,7 +3,6 @@ Operation history for HP12C calculator.
 Ported from Java History.java.
 """
 
-
 from hp12c.model.instruction import Instruction
 
 
