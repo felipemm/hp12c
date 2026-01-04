@@ -1,4 +1,4 @@
-.PHONY: help build build-macos build-windows build-linux clean install distclean run install-deps
+.PHONY: help build build-macos build-windows build-linux clean regenerate-spec install distclean run install-deps
 
 # Application name
 APP_NAME = hp12c
@@ -74,6 +74,7 @@ help:
 	@echo "  make build-windows - Build Windows .exe"
 	@echo "  make build-linux  - Build Linux executable"
 	@echo "  make clean        - Remove build artifacts"
+	@echo "  make regenerate-spec - Regenerate spec file with latest dependencies"
 	@echo "  make distclean    - Remove all build and dist files"
 	@echo "  make install-deps - Install build dependencies"
 	@echo "  make run          - Run the application from source"
@@ -122,9 +123,25 @@ else
 	@$(MAKE) build-linux
 endif
 
+# Regenerate spec file with latest dependencies and inject info_plist
+# Useful when dependencies change - automatically patches with macOS metadata
+regenerate-spec: install-deps
+	@echo "Regenerating $(SPEC_FILE) with latest dependencies..."
+	@$(PYINSTALLER) \
+		--name=$(APP_NAME) \
+		--windowed \
+		--icon=$(ICON_PATH) \
+		--osx-bundle-identifier=com.hp12c.emulator \
+		$(COMMON_ARGS) \
+		--specpath=. \
+		$(MAIN_SCRIPT) 2>/dev/null || true
+	@echo "Patching $(SPEC_FILE) with info_plist (reading version from pyproject.toml)..."
+	@$(PYTHON) scripts/patch_spec_info_plist.py $(SPEC_FILE)
+	@echo "✓ Spec file regenerated and patched with info_plist"
+
 # macOS: Create .app bundle
 # Note: We clean dist directory completely to avoid PyQt5 framework symlink conflicts
-# Note: We use the existing spec file to preserve custom info_plist settings
+# Note: Spec file is always regenerated and patched with info_plist during build
 build-macos: install-deps
 	@echo "Cleaning previous build artifacts (required for macOS to avoid symlink conflicts)..."
 	@echo "Removing entire dist and build directories to avoid symlink conflicts..."
@@ -140,11 +157,18 @@ build-macos: install-deps
 		chmod -R u+w "$(BUILD_DIR)/$(APP_NAME)" 2>/dev/null || true; \
 		rm -rf "$(BUILD_DIR)/$(APP_NAME)"; \
 	fi
-	@echo "Building $(APP_NAME) macOS application bundle using $(SPEC_FILE)..."
-	@if [ ! -f "$(SPEC_FILE)" ]; then \
-		echo "Error: $(SPEC_FILE) not found. Please ensure the spec file exists."; \
-		exit 1; \
-	fi
+	@echo "Regenerating $(SPEC_FILE) with latest dependencies..."
+	@$(PYINSTALLER) \
+		--name=$(APP_NAME) \
+		--windowed \
+		--icon=$(ICON_PATH) \
+		--osx-bundle-identifier=com.hp12c.emulator \
+		$(COMMON_ARGS) \
+		--specpath=. \
+		$(MAIN_SCRIPT) 2>/dev/null || true
+	@echo "Patching $(SPEC_FILE) with info_plist (reading version from pyproject.toml)..."
+	@$(PYTHON) scripts/patch_spec_info_plist.py $(SPEC_FILE)
+	@echo "Building $(APP_NAME) macOS application bundle..."
 	$(PYINSTALLER) \
 		--clean \
 		--noconfirm \
