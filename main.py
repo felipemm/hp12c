@@ -4,19 +4,19 @@ Ported from Java FinanxApp.java.
 """
 
 import sys
-from hp12c_python_java_port.calculator.controller import Controller
-from hp12c_python_java_port.persistence.config_dao import ConfigurationDAO
+from hp12c.calculator.controller import Controller
+from hp12c.persistence.config_dao import ConfigurationDAO
 
 
 def main():
     """Main entry point."""
     # Load config first to check which UI framework to use
-    # This allows us to initialize QApplication early if needed
     cfg_dao = ConfigurationDAO()
     cfg = cfg_dao.get_configuration()
     ui_framework = cfg.get_ui_framework() if cfg else "tkinter"
 
-    # Initialize QApplication BEFORE creating Controller if PyQt5 is requested
+    # Only initialize QApplication if PyQt5 is explicitly requested
+    # This avoids compatibility issues on newer macOS versions
     app = None
     if ui_framework == "pyqt5":
         try:
@@ -24,9 +24,10 @@ def main():
             app = QApplication.instance()
             if app is None:
                 app = QApplication(sys.argv)
-            print("QApplication initialized for PyQt5")
-        except ImportError:
-            print("PyQt5 not available, falling back to Tkinter")
+                print("QApplication initialized for PyQt5")
+        except Exception as e:
+            # Catch all exceptions (including macOS version errors)
+            print(f"PyQt5 not available or incompatible ({e}), will use Tkinter")
             ui_framework = "tkinter"
             if cfg:
                 cfg.set_ui_framework("tkinter")
@@ -44,10 +45,14 @@ def main():
         if frame_type == 'QMainWindow':
             # PyQt5: Ensure QApplication exists
             if app is None:
-                from PyQt5.QtWidgets import QApplication
-                app = QApplication.instance()
-                if app is None:
-                    app = QApplication(sys.argv)
+                try:
+                    from PyQt5.QtWidgets import QApplication
+                    app = QApplication.instance()
+                    if app is None:
+                        app = QApplication(sys.argv)
+                except Exception as e:
+                    print(f"Error initializing QApplication: {e}")
+                    sys.exit(1)
 
             window.show()
             sys.exit(app.exec_())
