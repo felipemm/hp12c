@@ -2,6 +2,8 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-GPL--3.0--or--later-green)](LICENSE)
+[![Version](https://img.shields.io/github/v/release/felipemm/hp12c)](https://github.com/felipemm/hp12c/releases)
+[![codecov](https://codecov.io/gh/felipemm/hp12c/branch/main/graph/badge.svg)](https://codecov.io/gh/felipemm/hp12c)
 
 This is a Python port of the Java HP12C calculator emulator, originally decompiled from `hp12c.jar`.
 
@@ -15,45 +17,66 @@ A complete HP12C financial calculator emulator with:
 - General purpose memory registers
 - Statistical functions
 - Date calculations
-- Tkinter-based GUI
+- Dual UI framework support (Tkinter and PyQt5)
+- Multiple skins/themes
+- Multi-language support (English, Spanish, French, Portuguese)
 
 ## Architecture
 
-The port maintains the Java architecture structure:
+The port maintains the Java architecture structure with a clean separation of concerns:
 
 ```
-hp12c_python_java_port/
+hp12c/
 ├── calculator/          # Core calculator engine
 │   ├── calculator.py    # Main Calculator class
 │   ├── key.py          # Key enumeration
-│   ├── config.py       # Configuration
+│   ├── config.py       # Configuration management
 │   ├── exceptions.py   # CalculatorException
-│   └── controller.py  # Controller (MVC)
+│   └── controller.py   # Controller (MVC pattern)
 ├── model/              # Data models
-│   ├── stack.py        # RPN stack
+│   ├── stack.py        # RPN stack implementation
 │   ├── display.py      # Display formatting
 │   ├── flags.py        # Calculator flags
-│   ├── finance_memory.py
-│   ├── general_memory.py
-│   ├── program_memory.py
-│   ├── history.py
-│   ├── step.py
-│   └── instruction.py
+│   ├── finance_memory.py  # Financial memory (TVM variables)
+│   ├── general_memory.py # General purpose registers
+│   ├── program_memory.py  # Program memory (1000 steps)
+│   ├── history.py      # Operation history
+│   ├── step.py         # Program step representation
+│   └── instruction.py  # Instruction representation
 ├── hp12c_math/         # Math utilities
 │   └── number.py       # High-precision Number class (using Decimal)
 ├── utils/              # Utilities
-│   ├── date_utils.py
-│   └── timer.py
+│   ├── date.py         # Date class for date operations
+│   ├── date_utils.py   # Date utility functions
+│   ├── language_loader.py  # Multi-language support
+│   ├── skin_loader.py   # Skin/theme loader
+│   ├── logger.py       # Logging configuration
+│   └── timer.py        # Timer utilities
 ├── persistence/        # Persistence layer
 │   ├── config_dao.py   # Configuration persistence (JSON-based)
-│   └── memory_dao.py   # Memory persistence (JSON-based)
-├── ui/                 # Tkinter GUI
-│   ├── main_window.py  # Main window
-│   ├── image_button.py # Custom button
-│   ├── image_panel.py  # Custom panel
-│   └── text_field.py   # Display field
+│   └── memory_dao.py    # Memory persistence (JSON-based)
+├── ui/                 # UI frameworks
+│   ├── base_main_window.py      # Abstract base class
+│   ├── tkinter_main_window.py   # Tkinter implementation
+│   ├── pyqt5_main_window.py     # PyQt5 implementation
+│   ├── main_window.py            # Legacy main window (Tkinter)
+│   ├── image_button.py           # Custom image button (Tkinter)
+│   ├── pyqt5_image_button.py     # Custom image button (PyQt5)
+│   ├── image_panel.py            # Image panel (Tkinter)
+│   ├── pyqt5_image_panel.py      # Image panel (PyQt5)
+│   ├── text_field.py             # Display text field
+│   ├── register_view_tkinter.py  # Register view (Tkinter)
+│   ├── register_view_pyqt5.py    # Register view (PyQt5)
+│   └── history_view_tkinter.py   # History view (Tkinter)
+├── resources/          # Resources
+│   ├── data/           # Default configuration and memory
+│   ├── langs/          # Language files (en, es, fr, pt)
+│   └── skins/          # Skin themes (argentum, aurum, nigrum)
+├── tests/              # Test suite
+│   ├── unit/           # Unit tests
+│   └── integration/   # Integration tests
 ├── main.py             # Application entry point
-├── requirements.txt
+├── pyproject.toml       # Project configuration
 └── README.md
 ```
 
@@ -178,12 +201,22 @@ make build-linux    # Linux executable
 - Day of week calculation
 - 360-day and 365-day year calculations
 
+### UI Features
+
+- Dual framework support: Tkinter (default) and PyQt5
+- Multiple skins/themes: Argentum, Aurum, and Nigrum
+- Multi-language support: English, Spanish, French, Portuguese
+- Register view window for inspecting memory registers
+- History view for operation history
+- Customizable display and button layouts
+
 ## Differences from Java Version
 
-1. **Persistence**: Uses JSON instead of XML for simpler Python integration
-2. **GUI**: Uses Tkinter instead of Swing
+1. **Persistence**: Uses JSON instead of XML for runtime data (XML still used for resources)
+2. **GUI**: Supports both Tkinter and PyQt5 (with automatic framework selection)
 3. **Decimal**: Uses Python's `decimal.Decimal` instead of Java's `BigDecimal`
 4. **Enum**: Uses Python's `enum.Enum` instead of Java enums
+5. **Architecture**: Maintains MVC pattern with abstract base classes for UI frameworks
 
 ## Development
 
@@ -263,37 +296,54 @@ hp12c/
 ├── calculator/          # Core calculator engine
 │   ├── calculator.py    # Main Calculator class
 │   ├── key.py          # Key enumeration
-│   ├── config.py       # Configuration
+│   ├── config.py       # Configuration management
 │   ├── exceptions.py   # CalculatorException
-│   └── controller.py  # Controller (MVC)
+│   └── controller.py   # Controller (MVC pattern)
 ├── model/              # Data models
-│   ├── stack.py        # RPN stack
+│   ├── stack.py        # RPN stack implementation
 │   ├── display.py      # Display formatting
 │   ├── flags.py        # Calculator flags
-│   ├── finance_memory.py
-│   ├── general_memory.py
-│   ├── program_memory.py
-│   ├── history.py
-│   ├── step.py
-│   └── instruction.py
+│   ├── finance_memory.py  # Financial memory (TVM variables)
+│   ├── general_memory.py # General purpose registers
+│   ├── program_memory.py  # Program memory (1000 steps)
+│   ├── history.py      # Operation history
+│   ├── step.py         # Program step representation
+│   └── instruction.py  # Instruction representation
 ├── hp12c_math/         # Math utilities
 │   └── number.py       # High-precision Number class (using Decimal)
 ├── utils/              # Utilities
-│   ├── date_utils.py
-│   ├── timer.py
-│   └── logger.py       # Logging configuration
+│   ├── date.py         # Date class for date operations
+│   ├── date_utils.py   # Date utility functions
+│   ├── language_loader.py  # Multi-language support
+│   ├── skin_loader.py   # Skin/theme loader
+│   ├── logger.py       # Logging configuration
+│   └── timer.py        # Timer utilities
 ├── persistence/        # Persistence layer
 │   ├── config_dao.py   # Configuration persistence (JSON-based)
-│   └── memory_dao.py   # Memory persistence (JSON-based)
+│   └── memory_dao.py    # Memory persistence (JSON-based)
 ├── ui/                 # UI frameworks
-│   ├── base_main_window.py  # Base window interface
-│   ├── tkinter_main_window.py  # Tkinter implementation
-│   ├── pyqt5_main_window.py    # PyQt5 implementation
-│   └── ...
+│   ├── base_main_window.py      # Abstract base class
+│   ├── tkinter_main_window.py   # Tkinter implementation
+│   ├── pyqt5_main_window.py     # PyQt5 implementation
+│   ├── main_window.py            # Legacy main window (Tkinter)
+│   ├── image_button.py           # Custom image button (Tkinter)
+│   ├── pyqt5_image_button.py     # Custom image button (PyQt5)
+│   ├── image_panel.py            # Image panel (Tkinter)
+│   ├── pyqt5_image_panel.py      # Image panel (PyQt5)
+│   ├── text_field.py             # Display text field
+│   ├── register_view_tkinter.py   # Register view (Tkinter)
+│   ├── register_view_pyqt5.py     # Register view (PyQt5)
+│   └── history_view_tkinter.py    # History view (Tkinter)
+├── resources/          # Resources
+│   ├── data/           # Default configuration and memory (XML)
+│   ├── langs/          # Language files (en.xml, es.xml, fr.xml, pt.xml)
+│   └── skins/          # Skin themes (argentum, aurum, nigrum)
 ├── tests/              # Test suite
 │   ├── unit/           # Unit tests
 │   ├── integration/    # Integration tests
 │   └── conftest.py     # Pytest fixtures
+├── scripts/            # Utility scripts
+│   └── bump_version.py  # Version bumping script
 ├── main.py             # Application entry point
 ├── pyproject.toml      # Project configuration
 ├── ruff.toml           # Ruff linting configuration
@@ -401,6 +451,35 @@ To use a custom data directory:
 export HP12C_DATA_DIR=/path/to/your/data
 python main.py
 ```
+
+### UI Framework Selection
+
+The calculator automatically selects the UI framework based on:
+
+1. Configuration setting (stored in `cfg.json`)
+2. Available frameworks (Tkinter is always available, PyQt5 is optional)
+3. Fallback to Tkinter if PyQt5 is not available or incompatible
+
+You can configure the preferred framework in the application settings or by editing the configuration file.
+
+### Skins and Themes
+
+The calculator includes three built-in skins:
+- **Argentum**: Silver theme
+- **Aurum**: Gold theme
+- **Nigrum**: Black theme
+
+Skins include custom button images, backgrounds, and fonts. You can switch skins through the application menu.
+
+### Language Support
+
+The calculator supports multiple languages:
+- English (en)
+- Spanish (es)
+- French (fr)
+- Portuguese (pt)
+
+Language files are stored in `hp12c/resources/langs/` and can be selected through the application menu.
 
 ### Troubleshooting
 

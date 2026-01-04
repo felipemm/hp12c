@@ -7,7 +7,7 @@ Thank you for your interest in contributing to the HP12C Calculator project! Thi
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
    ```bash
-   git clone https://github.com/your-username/hp12c.git
+   git clone https://github.com/felipemm/hp12c.git
    cd hp12c
    ```
 3. **Set up development environment**:

@@ -26,10 +26,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-username/hp12c"
-Documentation = "https://github.com/your-username/hp12c#readme"
-Repository = "https://github.com/your-username/hp12c"
-Issues = "https://github.com/your-username/hp12c/issues"
+Homepage = "https://github.com/felipemm/hp12c"
+Documentation = "https://github.com/felipemm/hp12c#readme"
+Repository = "https://github.com/felipemm/hp12c"
+Issues = "https://github.com/felipemm/hp12c/issues"
 [project.optional-dependencies]
 pyqt5 = [
     "pyqt5>=5.15.0",
