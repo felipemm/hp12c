@@ -3,13 +3,14 @@ Controller to connect calculator, window, and persistence.
 Ported from Java Controller.java.
 """
 
-from typing import Optional
+
 from hp12c.calculator.calculator import Calculator
 from hp12c.calculator.config import Configuration
 from hp12c.calculator.key import Key
 from hp12c.persistence.config_dao import ConfigurationDAO
 from hp12c.persistence.memory_dao import MemoryDAO
 from hp12c.ui.base_main_window import BaseMainWindow
+from hp12c.utils.logger import get_logger
 
 
 class Controller:
@@ -17,24 +18,30 @@ class Controller:
 
     def __init__(self):
         """Initialize controller."""
-        self._executor: Optional[Calculator] = None
-        self._window: Optional[BaseMainWindow] = None
-        self._memd: Optional[MemoryDAO] = None
-        self._cfgd: Optional[ConfigurationDAO] = None
-        self._cfg: Optional[Configuration] = None
+        self._logger = get_logger(__name__)
+        self._executor: Calculator | None = None
+        self._window: BaseMainWindow | None = None
+        self._memd: MemoryDAO | None = None
+        self._cfgd: ConfigurationDAO | None = None
+        self._cfg: Configuration | None = None
         self.init()
 
-    def init(self):
+    def init(self) -> None:
         """Initialize controller."""
         self.load_configs()
         self.load_memory()
         self.init_window()
         self.init_executor()
         if self._window:
-            self._window.update_display()
+            try:
+                self._window.update_display()
+            except (RuntimeError, AttributeError) as e:
+                # Handle cases where GUI widgets are deleted or unavailable
+                # This can happen in test environments or when GUI framework fails
+                self._logger.warning(f"Could not update display: {e}")
         self.welcome_message()
 
-    def init_window(self):
+    def init_window(self) -> None:
         """Initialize window based on configuration."""
         ui_framework = self._cfg.get_ui_framework() if self._cfg else "tkinter"
 
@@ -42,12 +49,13 @@ class Controller:
         if ui_framework == "pyqt5":
             try:
                 from hp12c.ui.pyqt5_main_window import PyQt5MainWindow
+
                 self._window = PyQt5MainWindow(self)
-                print(f"Using PyQt5 UI framework")
+                self._logger.info("Using PyQt5 UI framework")
                 self.set_window_configs()
                 return
             except ImportError as e:
-                print(f"PyQt5 not available ({e}), falling back to Tkinter")
+                self._logger.warning(f"PyQt5 not available ({e}), falling back to Tkinter")
                 ui_framework = "tkinter"
                 if self._cfg:
                     self._cfg.set_ui_framework("tkinter")
@@ -56,17 +64,43 @@ class Controller:
         if ui_framework == "tkinter":
             try:
                 from hp12c.ui.tkinter_main_window import TkinterMainWindow
+
                 self._window = TkinterMainWindow(self)
-                print(f"Using Tkinter UI framework")
+                self._logger.info("Using Tkinter UI framework")
                 self.set_window_configs()
                 return
             except ImportError as e:
-                print(f"Tkinter not available ({e}), trying PyQt5 as fallback")
+                self._logger.warning(f"Tkinter not available ({e}), trying PyQt5 as fallback")
                 # Try PyQt5 as fallback when tkinter fails
                 try:
                     from hp12c.ui.pyqt5_main_window import PyQt5MainWindow
+
                     self._window = PyQt5MainWindow(self)
-                    print(f"Using PyQt5 UI framework (fallback from Tkinter)")
+                    self._logger.info("Using PyQt5 UI framework (fallback from Tkinter)")
+                    if self._cfg:
+                        self._cfg.set_ui_framework("pyqt5")
+                    self.set_window_configs()
+                    return
+                except ImportError as e2:
+                    raise ImportError(
+                        "Neither Tkinter nor PyQt5 is available. "
+                        "Please install PyQt5 with: pip install PyQt5"
+                    ) from e2
+            except Exception as e:
+                # Catch TclError and other runtime errors when Tcl/Tk not properly installed
+                error_type = type(e).__name__
+                if error_type == "TclError":
+                    self._logger.warning(f"Tcl/Tk not available ({e}), trying PyQt5 as fallback")
+                else:
+                    self._logger.warning(
+                        f"Tkinter initialization failed ({e}), trying PyQt5 as fallback"
+                    )
+                # Try PyQt5 as fallback when tkinter fails
+                try:
+                    from hp12c.ui.pyqt5_main_window import PyQt5MainWindow
+
+                    self._window = PyQt5MainWindow(self)
+                    self._logger.info("Using PyQt5 UI framework (fallback from Tkinter)")
                     if self._cfg:
                         self._cfg.set_ui_framework("pyqt5")
                     self.set_window_configs()
@@ -80,21 +114,21 @@ class Controller:
         # Should not reach here, but just in case
         raise ValueError(f"Invalid or unsupported UI framework: {ui_framework}")
 
-    def init_executor(self):
+    def init_executor(self) -> None:
         """Initialize calculator executor."""
         self._executor = Calculator()
         self._executor.set_controller(self)
         self.set_executor_configs()
         self.set_executor_memory()
 
-    def load_configs(self):
+    def load_configs(self) -> None:
         """Load configuration."""
         self._cfgd = ConfigurationDAO()
         self._cfg = self._cfgd.get_configuration()
 
-    def save_configs(self):
+    def save_configs(self) -> None:
         """Save configuration."""
-        if self._window and self._executor and self._cfgd:
+        if self._window and self._executor and self._cfgd and self._cfg:
             x, y = self._window.get_window_location()
             self._cfg.set_x_pos(x)
             self._cfg.set_y_pos(y)
@@ -107,22 +141,22 @@ class Controller:
             self._cfg.set_mode(self._executor.get_display().get_mode())
             self._cfgd.save(self._cfg)
 
-    def set_window_configs(self):
+    def set_window_configs(self) -> None:
         """Set window configuration."""
         if self._window and self._cfg:
             self._window.set_configs(self._cfg)
 
-    def set_executor_configs(self):
+    def set_executor_configs(self) -> None:
         """Set executor configuration."""
         if self._executor and self._cfg:
             self._executor.set_configs(self._cfg)
 
-    def load_memory(self):
+    def load_memory(self) -> None:
         """Load memory."""
         if self._cfg:
             self._memd = MemoryDAO(self._cfg)
 
-    def save_memory(self):
+    def save_memory(self) -> None:
         """Save memory."""
         if self._memd and self._executor:
             self._memd.set_stack(self._executor.get_stack())
@@ -131,7 +165,7 @@ class Controller:
             self._memd.set_program_memory(self._executor.get_program_memory())
             self._memd.save()
 
-    def set_executor_memory(self):
+    def set_executor_memory(self) -> None:
         """Set executor memory."""
         if self._memd and self._executor:
             self._executor.set_stack(self._memd.get_stack())
@@ -140,7 +174,7 @@ class Controller:
             self._executor.set_program_memory(self._memd.get_program_memory())
             self._executor.update_display()
 
-    def key_pressed(self, key: Key):
+    def key_pressed(self, key: Key) -> None:
         """Handle key press."""
         if self._executor:
             self._executor.key_pressed(key)
@@ -154,15 +188,15 @@ class Controller:
         if self._window:
             self._window.key_released(key)
 
-    def get_executor(self) -> Optional[Calculator]:
+    def get_executor(self) -> Calculator | None:
         """Get calculator executor."""
         return self._executor
 
-    def get_window(self) -> Optional[BaseMainWindow]:
+    def get_window(self) -> BaseMainWindow | None:
         """Get main window."""
         return self._window
 
-    def get_configs(self) -> Optional[Configuration]:
+    def get_configs(self) -> Configuration | None:
         """Get configuration."""
         return self._cfg
 
@@ -214,6 +248,7 @@ class Controller:
 
             # Parse as double
             from hp12c.hp12c_math.number import Number
+
             val = Number.n(float(processed_text))
 
             # Set the value in the calculator
@@ -222,7 +257,7 @@ class Controller:
             self._executor.update_display()
             if self._window:
                 self._window.update_display()
-        except (ValueError, Exception) as e:
+        except (ValueError, Exception):
             # Silently ignore invalid clipboard content
             pass
 
@@ -232,6 +267,7 @@ class Controller:
             return
         from hp12c.hp12c_math.number import Number
         from hp12c.model.display import Display
+
         display = self._executor.get_display()
         display.set_value(Number.ZERO)
         display.set_status(Display.STATUS_READY)  # Reset status to ready
@@ -240,7 +276,7 @@ class Controller:
         if self._window:
             self._window.update_display()
             # Update register view if open
-            if hasattr(self._window, '_update_register_view'):
+            if hasattr(self._window, "_update_register_view"):
                 self._window._update_register_view()
 
     def erase_stack(self):
@@ -249,6 +285,7 @@ class Controller:
             return
         from hp12c.hp12c_math.number import Number
         from hp12c.model.display import Display
+
         display = self._executor.get_display()
         display.set_value(Number.ZERO)
         display.set_status(Display.STATUS_READY)  # Reset status to ready
@@ -257,7 +294,7 @@ class Controller:
         if self._window:
             self._window.update_display()
             # Update register view if open
-            if hasattr(self._window, '_update_register_view'):
+            if hasattr(self._window, "_update_register_view"):
                 self._window._update_register_view()
 
     def erase_finance(self):
@@ -268,7 +305,7 @@ class Controller:
         if self._window:
             self._window.update_display()
             # Update register view if open
-            if hasattr(self._window, '_update_register_view'):
+            if hasattr(self._window, "_update_register_view"):
                 self._window._update_register_view()
 
     def erase_statistic(self):
@@ -279,7 +316,7 @@ class Controller:
         if self._window:
             self._window.update_display()
             # Update register view if open
-            if hasattr(self._window, '_update_register_view'):
+            if hasattr(self._window, "_update_register_view"):
                 self._window._update_register_view()
 
     def erase_all_registers(self):
@@ -290,7 +327,7 @@ class Controller:
         if self._window:
             self._window.update_display()
             # Update register view if open
-            if hasattr(self._window, '_update_register_view'):
+            if hasattr(self._window, "_update_register_view"):
                 self._window._update_register_view()
 
     def erase_program(self):
@@ -302,7 +339,6 @@ class Controller:
             self._window.update_display()
             # Note: Program memory changes don't affect register view
 
-    def welcome_message(self):
+    def welcome_message(self) -> None:
         """Show welcome message."""
-        print("HP12C Calculator - Python Port")
-        print("Version:", Configuration.VERSION)
+        self._logger.info(f"HP12C Calculator - Python Port (Version: {Configuration.VERSION})")

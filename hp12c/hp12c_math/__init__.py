@@ -2,4 +2,4 @@
 
 from hp12c.hp12c_math.number import Number
 
-__all__ = ['Number']
+__all__ = ["Number"]

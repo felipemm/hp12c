@@ -3,11 +3,11 @@ Configuration for HP12C calculator.
 Ported from Java Configuration.java.
 """
 
-from typing import List, Optional
-from hp12c.model.stack import Stack
+
+from hp12c.model.finance_memory import FinanceMemory
 from hp12c.model.general_memory import GeneralMemory
 from hp12c.model.program_memory import ProgramMemory
-from hp12c.model.finance_memory import FinanceMemory
+from hp12c.model.stack import Stack
 from hp12c.model.step import Step
 
 
@@ -43,16 +43,45 @@ class Configuration:
     DEFAULT_SKIN = "nigrum"
 
     DEFAULT_KEYMAP = [
-        KeyMapItem(0, '0'), KeyMapItem(1, '1'), KeyMapItem(2, '2'), KeyMapItem(3, '3'),
-        KeyMapItem(4, '4'), KeyMapItem(5, '5'), KeyMapItem(6, '6'), KeyMapItem(7, '7'),
-        KeyMapItem(8, '8'), KeyMapItem(9, '9'), KeyMapItem(10, '/'), KeyMapItem(11, 'n'),
-        KeyMapItem(12, 'i'), KeyMapItem(13, 'p'), KeyMapItem(14, 'm'), KeyMapItem(15, 'v'),
-        KeyMapItem(16, 'h'), KeyMapItem(20, '*'), KeyMapItem(21, '!'), KeyMapItem(22, '\\'),
-        KeyMapItem(23, '#'), KeyMapItem(24, '$'), KeyMapItem(25, '%'), KeyMapItem(26, 'e'),
-        KeyMapItem(30, '-'), KeyMapItem(31, '['), KeyMapItem(32, ']'), KeyMapItem(33, 'd'),
-        KeyMapItem(34, 'y'), KeyMapItem(35, 'c'), KeyMapItem(36, '\n'), KeyMapItem(40, '+'),
-        KeyMapItem(41, 'o'), KeyMapItem(42, 'f'), KeyMapItem(43, 'g'), KeyMapItem(44, 's'),
-        KeyMapItem(45, 'r'), KeyMapItem(48, '.'), KeyMapItem(49, 'w')
+        KeyMapItem(0, "0"),
+        KeyMapItem(1, "1"),
+        KeyMapItem(2, "2"),
+        KeyMapItem(3, "3"),
+        KeyMapItem(4, "4"),
+        KeyMapItem(5, "5"),
+        KeyMapItem(6, "6"),
+        KeyMapItem(7, "7"),
+        KeyMapItem(8, "8"),
+        KeyMapItem(9, "9"),
+        KeyMapItem(10, "/"),
+        KeyMapItem(11, "n"),
+        KeyMapItem(12, "i"),
+        KeyMapItem(13, "p"),
+        KeyMapItem(14, "m"),
+        KeyMapItem(15, "v"),
+        KeyMapItem(16, "h"),
+        KeyMapItem(20, "*"),
+        KeyMapItem(21, "!"),
+        KeyMapItem(22, "\\"),
+        KeyMapItem(23, "#"),
+        KeyMapItem(24, "$"),
+        KeyMapItem(25, "%"),
+        KeyMapItem(26, "e"),
+        KeyMapItem(30, "-"),
+        KeyMapItem(31, "["),
+        KeyMapItem(32, "]"),
+        KeyMapItem(33, "d"),
+        KeyMapItem(34, "y"),
+        KeyMapItem(35, "c"),
+        KeyMapItem(36, "\n"),
+        KeyMapItem(40, "+"),
+        KeyMapItem(41, "o"),
+        KeyMapItem(42, "f"),
+        KeyMapItem(43, "g"),
+        KeyMapItem(44, "s"),
+        KeyMapItem(45, "r"),
+        KeyMapItem(48, "."),
+        KeyMapItem(49, "w"),
     ]
 
     def __init__(self):
@@ -73,7 +102,9 @@ class Configuration:
         self._beg = 0
         self._fix = 9
         self._mode = 0
-        self._keymap = [KeyMapItem(item.get_code(), item.get_char()) for item in Configuration.DEFAULT_KEYMAP]
+        self._keymap = [
+            KeyMapItem(item.get_code(), item.get_char()) for item in Configuration.DEFAULT_KEYMAP
+        ]
         self.set_defaults()
 
     def set_defaults(self):
@@ -86,9 +117,11 @@ class Configuration:
         self.set_stack_size(4)
         self.set_memory_size(20)
         self.set_program_size(100)
-        self._keymap = [KeyMapItem(item.get_code(), item.get_char()) for item in Configuration.DEFAULT_KEYMAP]
+        self._keymap = [
+            KeyMapItem(item.get_code(), item.get_char()) for item in Configuration.DEFAULT_KEYMAP
+        ]
 
-    def get_key_map_item(self, index: int) -> Optional[KeyMapItem]:
+    def get_key_map_item(self, index: int) -> KeyMapItem | None:
         """Get key map item at index."""
         if index < len(self._keymap):
             return self._keymap[index]
@@ -170,7 +203,7 @@ class Configuration:
     def set_mode(self, mode: int):
         self._mode = mode
 
-    def set_key_map(self, key_map: List[KeyMapItem]):
+    def set_key_map(self, key_map: list[KeyMapItem]):
         self._keymap = key_map
 
     # Getters
@@ -223,7 +256,7 @@ class Configuration:
     def get_mode(self) -> int:
         return self._mode
 
-    def get_key_map(self) -> List[KeyMapItem]:
+    def get_key_map(self) -> list[KeyMapItem]:
         return self._keymap
 
     # Factory methods
@@ -257,5 +290,5 @@ class Configuration:
         return Step()
 
     @staticmethod
-    def create_configuration() -> 'Configuration':
+    def create_configuration() -> "Configuration":
         return Configuration()

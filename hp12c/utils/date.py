@@ -34,10 +34,30 @@ class Date:
     DECEMBER = 12
 
     WEEK_DAYS = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-    MONTHS = ["", "January", "February", "March", "April", "May", "June",
-              "July", "August", "September", "October", "November", "December"]
+    MONTHS = [
+        "",
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ]
 
-    def __init__(self, year: Optional[int] = None, month: Optional[int] = None, day: Optional[int] = None, serial: Optional[int] = None, date: Optional['Date'] = None):
+    def __init__(
+        self,
+        year: int | None = None,
+        month: int | None = None,
+        day: int | None = None,
+        serial: int | None = None,
+        date: Optional["Date"] = None,
+    ):
         """Initialize Date."""
         self._day = 0
         self._month = 0
@@ -63,7 +83,7 @@ class Date:
             self._error = "No errors found"
 
     @staticmethod
-    def get_instance(year: int, month: int, day: int) -> 'Date':
+    def get_instance(year: int, month: int, day: int) -> "Date":
         """Factory method to create Date instance."""
         return Date(year, month, day)
 
@@ -74,7 +94,7 @@ class Date:
         self._month = dt.get_month()
         self._year = dt.get_year()
 
-    def set_date_from_date(self, date: 'Date'):
+    def set_date_from_date(self, date: "Date"):
         """Set date from another Date."""
         self._day = date.get_day()
         self._month = date.get_month()
@@ -106,9 +126,7 @@ class Date:
                         d = 31
                     elif m == 7:
                         d = 30
-                    elif m == 8:
-                        d = 31
-                    elif m == 9:
+                    elif m == 8 or m == 9:
                         d = 31
                     elif m == 10:
                         d = 30
@@ -179,7 +197,7 @@ class Date:
         self._year = year
         self.validate()
 
-    def get_date(self) -> 'Date':
+    def get_date(self) -> "Date":
         """Get date (returns self)."""
         return self
 
@@ -252,13 +270,17 @@ class Date:
     def gregorian_to_julian(self, d: float, m: float, y: float) -> float:
         """Convert Gregorian date to Julian day number."""
         GREGORIAN_EPOCH = 1721425.5
-        return (GREGORIAN_EPOCH - 1.0 + 365.0 * (y - 1.0) +
-                math.floor((y - 1.0) / 4.0) -
-                math.floor((y - 1.0) / 100.0) +
-                math.floor((y - 1.0) / 400.0) +
-                math.floor((367.0 * m - 362.0) / 12.0) +
-                (0 if m <= 2.0 else (-1 if self.is_gregorian_leap_year(y) else -2)) +
-                d)
+        return (
+            GREGORIAN_EPOCH
+            - 1.0
+            + 365.0 * (y - 1.0)
+            + math.floor((y - 1.0) / 4.0)
+            - math.floor((y - 1.0) / 100.0)
+            + math.floor((y - 1.0) / 400.0)
+            + math.floor((367.0 * m - 362.0) / 12.0)
+            + (0 if m <= 2.0 else (-1 if self.is_gregorian_leap_year(y) else -2))
+            + d
+        )
 
     def is_gregorian_leap_year(self, year: float) -> bool:
         """Check if year is a Gregorian leap year."""
@@ -296,7 +318,7 @@ class Date:
         return int(dt)
 
     @staticmethod
-    def serial_to_date(valor: int) -> 'Date':
+    def serial_to_date(valor: int) -> "Date":
         """Convert serial number to Date."""
         dt = Date()
         result = 0
@@ -314,9 +336,9 @@ class Date:
                     dt.set_year(int(round(y)))
                     result = dt.get_serial()
                     if result > valor:
-                        y -= begin_loop / (2.0 ** a)
+                        y -= begin_loop / (2.0**a)
                     elif result < valor:
-                        y += begin_loop / (2.0 ** a)
+                        y += begin_loop / (2.0**a)
                     elif dt.is_valid():
                         d = 32
                         m = 13
@@ -345,9 +367,7 @@ class Date:
 
         if d2 == 31 and (d1 == 30 or d1 == 31):
             z2 = 30.0
-        elif d2 == 31 and d1 < 30:
-            z2 = float(d2)
-        elif d2 < 31:
+        elif d2 == 31 and d1 < 30 or d2 < 31:
             z2 = float(d2)
 
         try:
@@ -360,26 +380,26 @@ class Date:
         return int(retorno)
 
     @staticmethod
-    def diff_dates(beg_date: 'Date', end_date: 'Date') -> int:
+    def diff_dates(beg_date: "Date", end_date: "Date") -> int:
         """Calculate difference in days between two dates."""
         a = beg_date.get_serial()
         b = end_date.get_serial()
         return b - a
 
-    def diff_dates_instance(self, end_date: 'Date') -> int:
+    def diff_dates_instance(self, end_date: "Date") -> int:
         """Calculate difference in days from this date to end date."""
         a = self.get_serial()
         b = end_date.get_serial()
         return b - a
 
     @staticmethod
-    def diff_dates_360(begin_date: 'Date', end_date: 'Date') -> int:
+    def diff_dates_360(begin_date: "Date", end_date: "Date") -> int:
         """Calculate difference in days (360-day year) between two dates."""
         a = begin_date.get_commercial_serial()
         b = end_date.get_commercial_serial()
         return b - a
 
-    def diff_commercial_dates(self, end_date: 'Date') -> int:
+    def diff_commercial_dates(self, end_date: "Date") -> int:
         """Calculate commercial date difference."""
         a = self.get_commercial_serial()
         b = end_date.get_commercial_serial()
@@ -393,6 +413,4 @@ class Date:
         """Equality comparison."""
         if not isinstance(other, Date):
             return False
-        return (self._year == other._year and
-                self._month == other._month and
-                self._day == other._day)
+        return self._year == other._year and self._month == other._month and self._day == other._day

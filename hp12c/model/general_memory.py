@@ -4,14 +4,14 @@ Ported from Java GeneralMemory.java.
 """
 
 import math
-from typing import List, Optional
+
 from hp12c.hp12c_math.number import Number
 
 
 class GeneralMemory:
     """Manages general purpose memory registers."""
 
-    def __init__(self, size: int = 20, mem: Optional[List[List[Number]]] = None):
+    def __init__(self, size: int = 20, mem: list[list[Number]] | None = None):
         """Initialize general memory."""
         if mem is not None:
             self._mem = mem
@@ -51,7 +51,7 @@ class GeneralMemory:
             return self._mem[idx][0]
         return Number.ZERO
 
-    def get_with_times(self, idx: int) -> List[Number]:
+    def get_with_times(self, idx: int) -> list[Number]:
         """Get value and times at index."""
         if idx < len(self._mem):
             return [self._mem[idx][0], self._mem[idx][1]]
@@ -70,11 +70,15 @@ class GeneralMemory:
 
     def set_with_times(self, idx: int, value: Number, times: Number):
         """Set value and times at index."""
-        if idx < len(self._mem) and times.greater_than(Number.ZERO) and times.less_than(Number.HUNDRED):
+        if (
+            idx < len(self._mem)
+            and times.greater_than(Number.ZERO)
+            and times.less_than(Number.HUNDRED)
+        ):
             self._mem[idx][0] = value
             self._mem[idx][1] = times
 
-    def set_with_times_from_array(self, idx: int, a: List[Number]):
+    def set_with_times_from_array(self, idx: int, a: list[Number]):
         """Set value and times from array."""
         self.set_with_times(idx, a[0], a[1])
 
@@ -82,22 +86,22 @@ class GeneralMemory:
         """Get current index."""
         return self._cur
 
-    def get_array(self) -> List[List[Number]]:
+    def get_array(self) -> list[list[Number]]:
         """Get memory array."""
         return [[pair[0], pair[1]] for pair in self._mem]
 
-    def set_array(self, mem: List[List[Number]]):
+    def set_array(self, mem: list[list[Number]]):
         """Set memory array."""
         self._mem = mem
 
-    def put(self, value: Number, times: Number = None):
+    def put(self, value: Number, times: Number | None = None):
         """Put value at current index."""
         if times is None:
             times = Number.ONE
         self._cur += 1
         self.set_with_times(self._cur, value, times)
 
-    def put_from_array(self, a: List[Number]):
+    def put_from_array(self, a: list[Number]):
         """Put from array."""
         self._cur += 1
         self.set_with_times_from_array(self._cur, a)
@@ -196,7 +200,7 @@ class GeneralMemory:
             self._mem[i][0] = Number.ZERO
             self._mem[i][1] = Number.ONE
 
-    def mean(self) -> List[Number]:
+    def mean(self) -> list[Number]:
         """Calculate mean."""
         n = self.get_r1()
         x_sum = self.get_r2()
@@ -216,7 +220,7 @@ class GeneralMemory:
             raise ValueError("Weight sum in weighted average is ZERO")
         return xy_sum.divide(x_sum)
 
-    def standard_deviation(self) -> List[Number]:
+    def standard_deviation(self) -> list[Number]:
         """Calculate standard deviation."""
         n = self.get_r1()
         x_sum = self.get_r2()
@@ -232,11 +236,11 @@ class GeneralMemory:
         s = _sum.d()
         sqr = _sqr_sum.d()
         cnt = _count.d()
-        p = cnt * sqr - (s ** 2)
+        p = cnt * sqr - (s**2)
         q = cnt * (cnt - 1.0)
         return Number.n(math.sqrt(p / q))
 
-    def y_linear_estimation(self, value: Number) -> List[Number]:
+    def y_linear_estimation(self, value: Number) -> list[Number]:
         """Calculate y linear estimation."""
         n = self.get_r1()
         x_sum = self.get_r2()
@@ -249,7 +253,15 @@ class GeneralMemory:
         r = self._r_lin_est(x_sum, y_sum, xy_sum, x2_sum, self.get_r5(), n)
         return [y_est, r]
 
-    def _y_lin_est(self, x_sum: Number, y_sum: Number, xy_sum: Number, x2_sum: Number, count: Number, x_val: Number) -> Number:
+    def _y_lin_est(
+        self,
+        x_sum: Number,
+        y_sum: Number,
+        xy_sum: Number,
+        x2_sum: Number,
+        count: Number,
+        x_val: Number,
+    ) -> Number:
         """Y linear estimation helper."""
         xs = x_sum.d()
         ys = y_sum.d()
@@ -257,11 +269,19 @@ class GeneralMemory:
         x2s = x2_sum.d()
         cnt = count.d()
         xv = x_val.d()
-        b = (xys - xs * ys / cnt) / (x2s - (xs ** 2) / cnt)
+        b = (xys - xs * ys / cnt) / (x2s - (xs**2) / cnt)
         a = ys / cnt - b * (xs / cnt)
         return Number.n(a + b * xv)
 
-    def _r_lin_est(self, x_sum: Number, y_sum: Number, xy_sum: Number, x2_sum: Number, y2_sum: Number, count: Number) -> Number:
+    def _r_lin_est(
+        self,
+        x_sum: Number,
+        y_sum: Number,
+        xy_sum: Number,
+        x2_sum: Number,
+        y2_sum: Number,
+        count: Number,
+    ) -> Number:
         """Correlation coefficient helper."""
         xs = x_sum.d()
         ys = y_sum.d()
@@ -270,6 +290,6 @@ class GeneralMemory:
         y2s = y2_sum.d()
         cnt = count.d()
         p = abs(xys - xs * ys / cnt)
-        q1 = abs(x2s - (xs ** 2) / cnt)
-        q2 = abs(y2s - (ys ** 2) / cnt)
+        q1 = abs(x2s - (xs**2) / cnt)
+        q2 = abs(y2s - (ys**2) / cnt)
         return Number.n(p / math.sqrt(q1 * q2))

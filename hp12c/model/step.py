@@ -3,13 +3,20 @@ Step class for program instructions.
 Ported from Java Step.java.
 """
 
-from typing import List, Optional
+from typing import Optional
 
 
 class Step:
     """Represents a program step with modifier, key, and complement."""
 
-    def __init__(self, mod: int = -1, key: int = -1, cpm: int = -1, stp: Optional['Step'] = None, stp_array: Optional[List[int]] = None):
+    def __init__(
+        self,
+        mod: int = -1,
+        key: int = -1,
+        cpm: int = -1,
+        stp: Optional["Step"] = None,
+        stp_array: list[int] | None = None,
+    ):
         """Initialize step."""
         if stp is not None:
             self._mod = stp.get_modifier()
@@ -64,7 +71,7 @@ class Step:
         """Set complement."""
         self._cpm = cpm
 
-    def get_array(self) -> List[int]:
+    def get_array(self) -> list[int]:
         """Get step as array."""
         return [self.get_modifier(), self.get_key(), self.get_complement()]
 
@@ -79,7 +86,7 @@ class Step:
         return Step.is_undefined_static(self)
 
     @staticmethod
-    def is_undefined_static(step: 'Step') -> bool:
+    def is_undefined_static(step: "Step") -> bool:
         """Check if step is undefined."""
         return step._mod == -1 or step._key == -1 or step._cpm == -1
 
@@ -88,36 +95,37 @@ class Step:
         Step.set_undefined_static(self)
 
     @staticmethod
-    def set_undefined_static(step: 'Step'):
+    def set_undefined_static(step: "Step"):
         """Set step to undefined."""
         step.clear()
 
     @staticmethod
-    def get_undefined() -> 'Step':
+    def get_undefined() -> "Step":
         """Get undefined step."""
         return Step()
 
     def __str__(self) -> str:
         """String representation."""
-        from ..calculator.key import Key
         result = "==[STEP]============\n"
-        result += f"Modifier: [{Key.get_name(self._mod)}]\n"
-        result += f"Function: [{Key.get_name(self._key)}]\n"
+        result += f"Modifier: [{self._mod}]\n"
+        result += f"Function: [{self._key}]\n"
         return result
 
-    def equals(self, stp: 'Step') -> bool:
+    def equals(self, stp: "Step") -> bool:
         """Check if equal to another step."""
-        return (self.get_modifier() == stp.get_modifier() and
-                self.get_key() == stp.get_key() and
-                self.get_complement() == stp.get_complement())
+        return (
+            self.get_modifier() == stp.get_modifier()
+            and self.get_key() == stp.get_key()
+            and self.get_complement() == stp.get_complement()
+        )
 
-    def set_step_from_step(self, stp: 'Step'):
+    def set_step_from_step(self, stp: "Step"):
         """Set step from another step."""
         self.set_modifier(stp.get_modifier())
         self.set_key(stp.get_key())
         self.set_complement(stp.get_complement())
 
-    def set_array_from_array(self, step: List[int]):
+    def set_array_from_array(self, step: list[int]):
         """Set step from array."""
         self.set_modifier(step[0])
         self.set_key(step[1])

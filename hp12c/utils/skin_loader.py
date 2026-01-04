@@ -5,20 +5,19 @@ Loads available skins from XML file.
 
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
 
 
 class SkinLoader:
     """Loads skin list from XML file."""
 
-    def __init__(self, base_path: Optional[Path] = None):
+    def __init__(self, base_path: Path | None = None):
         """Initialize skin loader.
 
         Args:
             base_path: Base path to resources directory. If None, will try to find it.
         """
         self._base_path = base_path
-        self._skins: List[Tuple[str, str]] = []  # List of (id, description) tuples
+        self._skins: list[tuple[str, str]] = []  # List of (id, description) tuples
         self._load_skin_list()
 
     def _load_skin_list(self):
@@ -44,13 +43,17 @@ class SkinLoader:
 
                 if skin_id is not None and skin_id.text:
                     skin_id_text = skin_id.text
-                    description_text = description.text if description is not None and description.text else skin_id_text
+                    description_text = (
+                        description.text
+                        if description is not None and description.text
+                        else skin_id_text
+                    )
                     self._skins.append((skin_id_text, description_text))
 
         except Exception as e:
             print(f"Error loading skin list file {skin_list_file}: {e}")
 
-    def get_skins(self) -> List[Tuple[str, str]]:
+    def get_skins(self) -> list[tuple[str, str]]:
         """Get list of available skins.
 
         Returns:
@@ -58,7 +61,7 @@ class SkinLoader:
         """
         return self._skins
 
-    def get_skin_ids(self) -> List[str]:
+    def get_skin_ids(self) -> list[str]:
         """Get list of skin IDs.
 
         Returns:

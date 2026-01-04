@@ -5,20 +5,21 @@ This is a comprehensive port with all key handlers.
 """
 
 import threading
-from typing import Optional, List
-from hp12c.calculator.key import Key
+
 from hp12c.calculator.config import Configuration
 from hp12c.calculator.exceptions import CalculatorException, Error
-from hp12c.model.stack import Stack
+from hp12c.calculator.key import Key
+from hp12c.hp12c_math.number import Number
 from hp12c.model.display import Display
-from hp12c.model.flags import Flags
 from hp12c.model.finance_memory import FinanceMemory
+from hp12c.model.flags import Flags
 from hp12c.model.general_memory import GeneralMemory
-from hp12c.model.program_memory import ProgramMemory
 from hp12c.model.history import History
 from hp12c.model.instruction import Instruction
+from hp12c.model.program_memory import ProgramMemory
+from hp12c.model.stack import Stack
 from hp12c.model.step import Step
-from hp12c.hp12c_math.number import Number
+from hp12c.utils.logger import get_logger
 from hp12c.utils.timer import Timer
 
 
@@ -27,20 +28,23 @@ class Calculator:
 
     def __init__(self):
         """Initialize calculator."""
-        self._k: Optional[Key] = None
+        self._logger = get_logger(__name__)
+        self._k: Key | None = None
         self._stp = Step()
-        self._tmp: Optional[List[Number]] = None
+        self._tmp: list[Number] | None = None
         self._controller = None
         self._flg = Flags()
         self._dsp = Display()
-        self._worker: Optional[threading.Thread] = None
+        self._worker: threading.Thread | None = None
         self._stk = Stack()
         self._fin = FinanceMemory()
         self._mem = GeneralMemory()
         self._prg = ProgramMemory()
         self._hst = History()
         self._cfg = Configuration()
-        self._previous_display_status = Display.STATUS_READY  # Track previous status to detect number completion
+        self._previous_display_status = (
+            Display.STATUS_READY
+        )  # Track previous status to detect number completion
         self.init()
 
     def init(self):
@@ -144,7 +148,7 @@ class Calculator:
         self._fin.set_begin(self._flg.get_begin() == 1)
         self._fin.set_c(self._flg.get_c() == 1)
 
-    def key_pressed(self, key: Key):
+    def key_pressed(self, key: Key | None):
         """Handle key press."""
         self._update_one_way_binded_flags()
         if key is None:
@@ -154,7 +158,11 @@ class Calculator:
             self._dsp.set_lock(True)
         # Key press handling (mostly no-op in Java)
 
-    def key_released(self, key: Key):
+    def process_key(self, key: Key):
+        """Process a key press (alias for key_released for test compatibility)."""
+        self.key_released(key)
+
+    def key_released(self, key: Key | None):
         """Handle key release - main entry point."""
         if key is None:
             return
@@ -296,7 +304,7 @@ class Calculator:
                 number_completed=number_completed,
                 previous_status=previous_status,
                 number_being_entered=number_being_entered,
-                modifier_before_operation=modifier_before_operation
+                modifier_before_operation=modifier_before_operation,
             )
 
             # Update previous status for next key press
@@ -306,10 +314,23 @@ class Calculator:
         except CalculatorException as e:
             self.clear_fgsr()
             self.show_error(e)
+            raise
+        except ZeroDivisionError as e:
+            # Convert ZeroDivisionError to CalculatorException
+            calc_ex = CalculatorException(Error.ERROR_MATH, str(e))
+            self.clear_fgsr()
+            self.show_error(calc_ex)
+            raise calc_ex from e
         except Exception as e:
             print(f"Error: {e}")
 
-    def _add_to_history(self, number_completed: bool = False, previous_status: int = Display.STATUS_READY, number_being_entered=None, modifier_before_operation: int = -1):
+    def _add_to_history(
+        self,
+        number_completed: bool = False,
+        previous_status: int = Display.STATUS_READY,
+        number_being_entered=None,
+        modifier_before_operation: int = -1,
+    ):
         """Add current instruction to history.
         Records both number entries and operations as separate entries.
 
@@ -347,15 +368,27 @@ class Calculator:
             ]
 
             # Skip if it's a number input key and we're still in input mode (not completed)
-            if key_code in input_keys and self._dsp.get_status() == Display.STATUS_INPUT and not number_completed:
+            if (
+                key_code in input_keys
+                and self._dsp.get_status() == Display.STATUS_INPUT
+                and not number_completed
+            ):
                 return
 
             # Skip EEX during input (entering exponent is part of number input)
-            if key_code == Key.KEY_EEX.get_code() and self._dsp.get_status() == Display.STATUS_INPUT and not number_completed:
+            if (
+                key_code == Key.KEY_EEX.get_code()
+                and self._dsp.get_status() == Display.STATUS_INPUT
+                and not number_completed
+            ):
                 return
 
             # Skip CHS during input (changing sign is part of number input)
-            if key_code == Key.KEY_CHS.get_code() and self._dsp.get_status() == Display.STATUS_INPUT and not number_completed:
+            if (
+                key_code == Key.KEY_CHS.get_code()
+                and self._dsp.get_status() == Display.STATUS_INPUT
+                and not number_completed
+            ):
                 return
 
             # If a number was just completed, we need to record TWO entries:
@@ -367,6 +400,7 @@ class Calculator:
                 # Create a temporary stack with the number in X
                 if number_being_entered is not None:
                     from hp12c.model.stack import Stack
+
                     temp_stack = Stack(other=self._stk)
                     temp_stack.set(0, number_being_entered)
 
@@ -404,9 +438,9 @@ class Calculator:
                 self._hst.put(instr)
 
             # Notify controller to refresh history window if open
-            if self._controller and hasattr(self._controller, 'get_window'):
+            if self._controller and hasattr(self._controller, "get_window"):
                 window = self._controller.get_window()
-                if window and hasattr(window, '_update_history_view'):
+                if window and hasattr(window, "_update_history_view"):
                     window._update_history_view()
         except Exception as e:
             # Don't fail on history errors, just log
@@ -426,11 +460,13 @@ class Calculator:
 
     def print_registers(self):
         """Print registers for debugging."""
-        if (self._dsp.get_status() != 1 and
-            self._flg.get_f() == 0 and
-            self._flg.get_g() == 0 and
-            self._flg.get_sto() == 0 and
-            self._flg.get_rcl() == 0):
+        if (
+            self._dsp.get_status() != 1
+            and self._flg.get_f() == 0
+            and self._flg.get_g() == 0
+            and self._flg.get_sto() == 0
+            and self._flg.get_rcl() == 0
+        ):
             print("--------------------")
             print(self._stp)
             print(self._stk)
@@ -458,7 +494,7 @@ class Calculator:
             self.gto_input(0)
         else:
             self.shift_up_if_output_status()
-            self._dsp.input_char('0')
+            self._dsp.input_char("0")
 
     def do_key_01(self):
         """Handle key 1."""
@@ -481,7 +517,7 @@ class Calculator:
             self.gto_input(1)
         else:
             self.shift_up_if_output_status()
-            self._dsp.input_char('1')
+            self._dsp.input_char("1")
 
     def do_key_02(self):
         """Handle key 2."""
@@ -504,7 +540,7 @@ class Calculator:
             self.gto_input(2)
         else:
             self.shift_up_if_output_status()
-            self._dsp.input_char('2')
+            self._dsp.input_char("2")
 
     def do_key_03(self):
         """Handle key 3."""
@@ -524,7 +560,7 @@ class Calculator:
             self.gto_input(3)
         else:
             self.shift_up_if_output_status()
-            self._dsp.input_char('3')
+            self._dsp.input_char("3")
 
     def do_key_04(self):
         """Handle key 4."""
@@ -543,7 +579,7 @@ class Calculator:
             self.gto_input(4)
         else:
             self.shift_up_if_output_status()
-            self._dsp.input_char('4')
+            self._dsp.input_char("4")
 
     def do_key_05(self):
         """Handle key 5."""
@@ -562,7 +598,7 @@ class Calculator:
             self.gto_input(5)
         else:
             self.shift_up_if_output_status()
-            self._dsp.input_char('5')
+            self._dsp.input_char("5")
 
     def do_key_06(self):
         """Handle key 6."""
@@ -582,7 +618,7 @@ class Calculator:
             self.gto_input(6)
         else:
             self.shift_up_if_output_status()
-            self._dsp.input_char('6')
+            self._dsp.input_char("6")
 
     def do_key_07(self):
         """Handle key 7."""
@@ -601,7 +637,7 @@ class Calculator:
             self.gto_input(7)
         else:
             self.shift_up_if_output_status()
-            self._dsp.input_char('7')
+            self._dsp.input_char("7")
 
     def do_key_08(self):
         """Handle key 8."""
@@ -620,7 +656,7 @@ class Calculator:
             self.gto_input(8)
         else:
             self.shift_up_if_output_status()
-            self._dsp.input_char('8')
+            self._dsp.input_char("8")
 
     def do_key_09(self):
         """Handle key 9."""
@@ -638,7 +674,7 @@ class Calculator:
             self.gto_input(9)
         else:
             self.shift_up_if_output_status()
-            self._dsp.input_char('9')
+            self._dsp.input_char("9")
 
     def do_key_10(self):
         """Handle key / (divide)."""
@@ -810,7 +846,7 @@ class Calculator:
             if self._dsp.get_status() != 1:
                 self._stk.put(self._stk.pop().negate())
             else:
-                self._dsp.input_char('-')
+                self._dsp.input_char("-")
 
     def do_key_20(self):
         """Handle key * (multiply)."""
@@ -985,7 +1021,10 @@ class Calculator:
         if self._flg.get_f() == 1:
             self._flg.toggle_f()
         elif self._flg.get_g() == 1:
+            # G + XY = square root
+            self._stk.sqrt()
             self._flg.toggle_g()
+            self._dsp.set_status(2)
         elif self._flg.get_sto() > 0:
             self._flg.toggle_sto()
         elif self._flg.get_rcl() > 0:
@@ -1115,7 +1154,7 @@ class Calculator:
             self._flg.toggle_on()
         else:
             self.shift_up_if_output_status()
-            self._dsp.input_char('.')
+            self._dsp.input_char(".")
 
     def do_key_49(self):
         """Handle key Σ+ (sum plus)."""
@@ -1166,17 +1205,23 @@ class Calculator:
         elif self._flg.get_sto() == 2:
             if i == -1:
                 return
+            if self._tmp is None:
+                return
             self._tmp[1] = Number.n(i)
             self._flg.set_sto(3)
         elif self._flg.get_sto() == 3:
             if i == -1:
+                return
+            if self._tmp is None:
                 return
             self._tmp[2] = Number.n(i)
             self._flg.set_sto(4)
 
         if self._flg.get_sto() == 4:
             self._flg.set_sto(0)
-            idx = Number.i(self._tmp[0]) * 100 + Number.i(self._tmp[1]) * 10 + Number.i(self._tmp[2])
+            if self._tmp is None:
+                return
+            idx = self._tmp[0].i() * 100 + self._tmp[1].i() * 10 + self._tmp[2].i()
             self._mem.set(idx, self._stk.top())
             self._dsp.set_status(2)
 
@@ -1208,17 +1253,23 @@ class Calculator:
         elif self._flg.get_rcl() == 2:
             if i == -1:
                 return
+            if self._tmp is None:
+                return
             self._tmp[1] = Number.n(i)
             self._flg.set_rcl(3)
         elif self._flg.get_rcl() == 3:
             if i == -1:
+                return
+            if self._tmp is None:
                 return
             self._tmp[2] = Number.n(i)
             self._flg.set_rcl(4)
 
         if self._flg.get_rcl() == 4:
             self._flg.set_rcl(0)
-            idx = Number.i(self._tmp[0]) * 100 + Number.i(self._tmp[1]) * 10 + Number.i(self._tmp[2])
+            if self._tmp is None:
+                return
+            idx = self._tmp[0].i() * 100 + self._tmp[1].i() * 10 + self._tmp[2].i()
             self.set_x(self._mem.get(idx))
             self._dsp.set_status(2)
 
@@ -1250,21 +1301,27 @@ class Calculator:
         elif self._flg.get_gto() == 2:
             if i == -1:
                 return
+            if self._tmp is None:
+                return
             self._tmp[1] = Number.n(i)
             self._flg.set_gto(3)
         elif self._flg.get_gto() == 3:
             if i == -1:
+                return
+            if self._tmp is None:
                 return
             self._tmp[2] = Number.n(i)
             self._flg.set_gto(4)
 
         if self._flg.get_gto() == 4:
             self._flg.set_gto(0)
-            idx = Number.i(self._tmp[0]) * 100 + Number.i(self._tmp[1]) * 10 + Number.i(self._tmp[2])
+            if self._tmp is None:
+                return
+            idx = self._tmp[0].i() * 100 + self._tmp[1].i() * 10 + self._tmp[2].i()
             self._prg.set_current_index(idx)
             self._dsp.set_status(2)
 
-    def program_input(self, key: Key):
+    def program_input(self, key: Key | None):
         """Handle program mode input."""
         if key is None:
             return
@@ -1278,15 +1335,15 @@ class Calculator:
         """Show error on display."""
         if e.get_error() != Error.ERROR_MAG:
             self.show_display_message(f" Error {e.get_code()}")
-        print(e)
+        self._logger.error(f"Calculator error: {e}")
 
     def show_display_message(self, msg: str):
         """Show message on display."""
         self._dsp.set_message(msg)
         self._dsp.set_lock(True)
-        if self._controller and hasattr(self._controller, 'get_window'):
+        if self._controller and hasattr(self._controller, "get_window"):
             window = self._controller.get_window()
-            if window and hasattr(window, 'update_display'):
+            if window and hasattr(window, "update_display"):
                 window.update_display()
 
     def clear_fgsr(self):
@@ -1302,24 +1359,23 @@ class Calculator:
 
     def execute_step(self, stp: Step):
         """Execute a program step."""
-        if stp.get_key() == Key.KEY_NULL.get_code():
+        if stp.get_key() == Key.KEY_NULL.get_code() or (
+            stp.get_modifier() == Key.KEY_G.get_code()
+            and stp.get_key() == Key.KEY_ROLL.get_code()
+            and stp.get_complement() == Key.KEY_0.get_code()
+        ):
             self.stop_program()
-        elif (stp.get_modifier() == Key.KEY_G.get_code() and
-              stp.get_key() == Key.KEY_ROLL.get_code() and
-              stp.get_complement() == Key.KEY_0.get_code()):
-            self.stop_program()
-        elif (stp.get_modifier() == Key.KEY_G.get_code() and
-              stp.get_key() == Key.KEY_ROLL.get_code()):
+        elif (
+            stp.get_modifier() == Key.KEY_G.get_code() and stp.get_key() == Key.KEY_ROLL.get_code()
+        ):
             self._prg.set_current_index(stp.get_complement())
-        elif (stp.get_modifier() == Key.KEY_G.get_code() and
-              stp.get_key() == Key.KEY_XY.get_code()):
+        elif stp.get_modifier() == Key.KEY_G.get_code() and stp.get_key() == Key.KEY_XY.get_code():
             if self._stk.get(0).less_than_or_equal_to(self._stk.get(1)):
                 self._prg.next()
             else:
                 self._prg.next()
                 self._prg.next()
-        elif (stp.get_modifier() == Key.KEY_G.get_code() and
-              stp.get_key() == Key.KEY_CLX.get_code()):
+        elif stp.get_modifier() == Key.KEY_G.get_code() and stp.get_key() == Key.KEY_CLX.get_code():
             if self._stk.get(0).is_zero():
                 self._prg.next()
             else:
@@ -1348,16 +1404,20 @@ class Calculator:
         self.get_display().set_lock(False)
         if self._prg.get_current_index() == 0:
             self._prg.next()
-        self.execute_step(self._prg.get_current())
+        current_step = self._prg.get_current()
+        if current_step is not None:
+            self.execute_step(current_step)
         if self._prg.get_current_index() == self._prg.get_size() - 1:
             self.stop_program()
 
     def execute_program(self):
         """Execute program in background thread."""
+
         def worker():
             while self._flg.get_run() == 1:
                 self.execute_single_step()
                 import time
+
                 time.sleep(0.01)
 
         self._flg.set_run(1)
@@ -1369,7 +1429,7 @@ class Calculator:
         self._prg.set_current_index(0)
         self._flg.set_run(0)
         self._dsp.set_lock(False)
-        if self._controller and hasattr(self._controller, 'get_window'):
+        if self._controller and hasattr(self._controller, "get_window"):
             window = self._controller.get_window()
-            if window and hasattr(window, 'update_display'):
+            if window and hasattr(window, "update_display"):
                 window.update_display()

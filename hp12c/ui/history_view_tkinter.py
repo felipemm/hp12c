@@ -5,7 +5,7 @@ Shows instruction history with step and stack information.
 
 import tkinter as tk
 from tkinter import ttk
-from typing import Optional
+
 from hp12c.calculator.calculator import Calculator
 from hp12c.calculator.key import Key
 
@@ -13,7 +13,7 @@ from hp12c.calculator.key import Key
 class HistoryViewWindow:
     """Window showing instruction history."""
 
-    def __init__(self, parent, calculator: Optional[Calculator], main_window=None):
+    def __init__(self, parent, calculator: Calculator | None, main_window=None):
         """Initialize history view window.
 
         Args:
@@ -24,7 +24,7 @@ class HistoryViewWindow:
         self._parent = parent
         self._calculator = calculator
         self._main_window = main_window
-        self._window = None
+        self._window: tk.Toplevel | None = None
         self._last_history_size = 0
         self._build()
 
@@ -46,11 +46,7 @@ class HistoryViewWindow:
         # Create treeview for history
         columns = ("index", "modifier", "key", "complement", "stack_x")
         self._tree = ttk.Treeview(
-            main_frame,
-            columns=columns,
-            show="headings",
-            height=25,
-            yscrollcommand=scrollbar.set
+            main_frame, columns=columns, show="headings", height=25, yscrollcommand=scrollbar.set
         )
         scrollbar.config(command=self._tree.yview)
 
@@ -89,7 +85,7 @@ class HistoryViewWindow:
         # Initial update
         self.update()
 
-    def _get_modifier_operation_name(self, modifier_code: int, key_code: int) -> Optional[str]:
+    def _get_modifier_operation_name(self, modifier_code: int, key_code: int) -> str | None:
         """Get the actual operation name when a modifier is used.
 
         Returns the operation name if modifier+key creates a specific operation,
@@ -120,7 +116,6 @@ class HistoryViewWindow:
             (Key.KEY_F.get_code(), Key.KEY_7.get_code()): "Fix 7",
             (Key.KEY_F.get_code(), Key.KEY_8.get_code()): "Fix 8",
             (Key.KEY_F.get_code(), Key.KEY_9.get_code()): "Fix 9",
-
             # G modifier operations
             (Key.KEY_G.get_code(), Key.KEY_N.get_code()): "N×12",
             (Key.KEY_G.get_code(), Key.KEY_I.get_code()): "I÷12",
@@ -177,11 +172,12 @@ class HistoryViewWindow:
     def _is_number_entry(self, step) -> bool:
         """Check if this instruction represents a number entry."""
         # Number entries have KEY_NULL (-1) as key, no modifier, no complement
-        return (step.get_key() == Key.KEY_NULL.get_code() and
-                step.get_modifier() == -1 and
-                step.get_complement() == -1)
+        key_code: int = step.get_key()
+        modifier: int = step.get_modifier()
+        complement: int = step.get_complement()
+        return key_code == Key.KEY_NULL.get_code() and modifier == -1 and complement == -1
 
-    def update(self):
+    def update(self) -> None:
         """Update history display from calculator."""
         if not self._calculator:
             return
@@ -257,6 +253,8 @@ class HistoryViewWindow:
 
                 # Insert at the beginning to show newest first (index 0 is newest)
                 # Display index shows position in history (0 = most recent)
+                # complement is always a string at this point (either operation_name or str(complement_code))
+                complement_str = complement if complement else ""
                 self._tree.insert(
                     "",
                     tk.END,
@@ -264,9 +262,9 @@ class HistoryViewWindow:
                         display_index,
                         modifier_name,
                         key_name,
-                        complement if complement != -1 else "",
-                        stack_x
-                    )
+                        complement_str,
+                        stack_x,
+                    ),
                 )
                 display_index += 1
 

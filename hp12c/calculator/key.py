@@ -63,7 +63,7 @@ class Key(Enum):
         return self._code
 
     @staticmethod
-    def get_key(code: int) -> 'Key':
+    def get_key(code: int) -> "Key":
         """Get key by code."""
         for k in Key:
             if k.get_code() == code:
@@ -71,7 +71,7 @@ class Key(Enum):
         return Key.KEY_NULL
 
     @staticmethod
-    def get_key_by_name(name: str) -> 'Key':
+    def get_key_by_name(name: str) -> "Key":
         """Get key by name."""
         try:
             return Key[name]
@@ -79,7 +79,7 @@ class Key(Enum):
             return Key.KEY_NULL
 
     @staticmethod
-    def get_name(code: int) -> str:
+    def get_name_by_code(code: int) -> str:
         """Get key name by code."""
         if code == -1:
             return ""

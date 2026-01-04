@@ -77,6 +77,15 @@ help:
 	@echo "  make distclean    - Remove all build and dist files"
 	@echo "  make install-deps - Install build dependencies"
 	@echo "  make run          - Run the application from source"
+	@echo "  make test         - Run tests"
+	@echo "  make test-cov     - Run tests with coverage"
+	@echo "  make lint         - Run linters (ruff)"
+	@echo "  make format       - Format code (ruff)"
+	@echo "  make type-check   - Run type checker (mypy)"
+	@echo "  make check-all    - Run all checks (lint, type-check, test)"
+	@echo "  make install-pre-commit - Install pre-commit hooks"
+	@echo "  make version      - Show current version"
+	@echo "  make bump-version - Bump version (use TYPE=major|minor|patch)"
 	@echo "  make help         - Show this help message"
 	@echo ""
 	@echo "Detected platform: $(PLATFORM)"
@@ -190,3 +199,72 @@ distclean: clean
 run:
 	@echo "Running $(APP_NAME) from source..."
 	$(PYTHON) $(MAIN_SCRIPT)
+
+test:
+	@echo "Running tests..."
+ifeq ($(USE_UV),true)
+	uv run pytest tests/
+else
+	$(PYTHON) -m pytest tests/
+endif
+
+test-cov:
+	@echo "Running tests with coverage..."
+ifeq ($(USE_UV),true)
+	uv run pytest --cov=hp12c --cov-report=html --cov-report=term tests/
+else
+	$(PYTHON) -m pytest --cov=hp12c --cov-report=html --cov-report=term tests/
+endif
+	@echo "Coverage report generated in htmlcov/index.html"
+
+lint:
+	@echo "Running linter (ruff)..."
+ifeq ($(USE_UV),true)
+	uv run ruff check hp12c/ tests/ main.py
+else
+	$(PYTHON) -m ruff check hp12c/ tests/ main.py
+endif
+
+format:
+	@echo "Formatting code (ruff)..."
+ifeq ($(USE_UV),true)
+	uv run ruff format hp12c/ tests/ main.py
+else
+	$(PYTHON) -m ruff format hp12c/ tests/ main.py
+endif
+
+type-check:
+	@echo "Running type checker (mypy)..."
+ifeq ($(USE_UV),true)
+	uv run mypy hp12c/ main.py
+else
+	$(PYTHON) -m mypy hp12c/ main.py
+endif
+
+check-all: lint type-check test
+	@echo "All checks completed!"
+
+install-pre-commit:
+	@echo "Installing pre-commit hooks..."
+ifeq ($(USE_UV),true)
+	uv run pre-commit install
+else
+	$(PYTHON) -m pre_commit install
+endif
+	@echo "Pre-commit hooks installed. They will run automatically on git commit."
+
+version:
+	@echo "HP12C Calculator version:"
+	@python -c "from hp12c import __version__; print(__version__)" 2>/dev/null || echo "0.1.0"
+
+bump-version:
+	@echo "Bumping version..."
+	@echo "Usage: make bump-version TYPE=[major|minor|patch] [NO_COMMIT=1] [NO_TAG=1] [NO_PUSH=1]"
+	@if [ -z "$(TYPE)" ]; then \
+		echo "Error: TYPE is required. Use TYPE=major, TYPE=minor, or TYPE=patch"; \
+		exit 1; \
+	fi
+	@python scripts/bump_version.py $(TYPE) \
+		$$([ -n "$(NO_COMMIT)" ] && echo "--no-commit") \
+		$$([ -n "$(NO_TAG)" ] && echo "--no-tag") \
+		$$([ -n "$(NO_PUSH)" ] && echo "--no-push")

@@ -3,29 +3,29 @@ Operation history for HP12C calculator.
 Ported from Java History.java.
 """
 
-from typing import List, Optional
+
 from hp12c.model.instruction import Instruction
 
 
 class History:
     """Manages operation history."""
 
-    def __init__(self, size: int = 100, hst: Optional[List[Instruction]] = None):
+    def __init__(self, size: int = 100, hst: list[Instruction] | None = None):
         """Initialize history."""
         if hst is not None:
-            self._instr = [None] * len(hst)
+            self._instr: list[Instruction | None] = [None] * len(hst)
             for i in range(len(hst)):
                 self._instr[i] = hst[i]
         else:
             self._instr = [None] * size
-        self._swp = None
+        self._swp: Instruction | None = None
         self.init()
 
     def init(self):
         """Initialize history (no-op)."""
         pass
 
-    def get(self, index: int) -> Optional[Instruction]:
+    def get(self, index: int) -> Instruction | None:
         """Get instruction at index."""
         return self._instr[index]
 
@@ -48,13 +48,13 @@ class History:
         self.shift_up()
         self._instr[0] = instr
 
-    def pop(self) -> Optional[Instruction]:
+    def pop(self) -> Instruction | None:
         """Pop instruction from top."""
         self._swp = self._instr[0]
         self.shift_down()
         return self._swp
 
-    def top(self) -> Optional[Instruction]:
+    def top(self) -> Instruction | None:
         """Get top instruction."""
         return self._instr[0]
 
@@ -66,14 +66,16 @@ class History:
         """String representation."""
         result = "---Program Memory---\n"
         for i in range(len(self._instr)):
-            if self._instr[i] is not None:
-                stp = self._instr[i].get_step()
-                stk = self._instr[i].get_stack()
+            instr = self._instr[i]
+            if instr is not None:
+                stp = instr.get_step()
+                stk = instr.get_stack()
                 result += f" - H{i}: {stp.get_modifier()}, {stp.get_key()}, {stp.get_complement()}, {stk.get(0)}\n"
         return result
 
     def clear(self):
         """Clear history."""
         for i in range(len(self._instr)):
-            if self._instr[i] is not None:
-                self._instr[i].clear()
+            instr = self._instr[i]
+            if instr is not None:
+                instr.clear()

@@ -4,22 +4,28 @@ Ported from Java ImagePanel.java using Tkinter Canvas.
 """
 
 import tkinter as tk
+
 from PIL import Image, ImageTk
-from typing import Optional
 
 
 class ImagePanel(tk.Canvas):
     """Custom panel with background image support."""
 
-    def __init__(self, parent=None, image_path: Optional[str] = None, image: Optional[Image.Image] = None, **kwargs):
+    def __init__(
+        self,
+        parent=None,
+        image_path: str | None = None,
+        image: Image.Image | None = None,
+        **kwargs,
+    ):
         """Initialize image panel."""
-        self._image = None
-        self._photo = None
+        self._image: Image.Image | None = None
+        self._photo: ImageTk.PhotoImage | None = None
 
         # Initialize parent first
         super().__init__(parent, **kwargs)
         self.init()
-        self.bind('<Configure>', self._on_configure)
+        self.bind("<Configure>", self._on_configure)
 
         # Set image after widget is initialized
         if image_path:
@@ -46,7 +52,7 @@ class ImagePanel(tk.Canvas):
             self._image = img
             self._update_display()
 
-    def _on_configure(self, event):
+    def _on_configure(self, _event):
         """Handle resize event."""
         if self._image:
             self._update_display()

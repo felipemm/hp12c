@@ -4,19 +4,27 @@ Ported from Java ImageButton.java using Tkinter.
 """
 
 import tkinter as tk
+
 from PIL import Image, ImageTk
-from typing import Optional
+
 from hp12c.calculator.key import Key
 
 
 class ImageButton(tk.Button):
     """Custom button with image support."""
 
-    def __init__(self, parent=None, image_path: Optional[str] = None, image: Optional[Image.Image] = None, key: Optional[Key] = None, **kwargs):
+    def __init__(
+        self,
+        parent=None,
+        image_path: str | None = None,
+        image: Image.Image | None = None,
+        key: Key | None = None,
+        **kwargs,
+    ):
         """Initialize image button."""
-        self._image = None
-        self._photo = None
-        self._key = key
+        self._image: Image.Image | None = None
+        self._photo: ImageTk.PhotoImage | None = None
+        self._key: Key | None = key
 
         # Initialize parent first
         super().__init__(parent, **kwargs)
@@ -48,15 +56,15 @@ class ImageButton(tk.Button):
             self._photo = ImageTk.PhotoImage(img)
             self.config(image=self._photo)
             # Keep reference to prevent garbage collection
-            if not hasattr(self, '_image_refs'):
-                self._image_refs = []
+            if not hasattr(self, "_image_refs"):
+                self._image_refs: list[ImageTk.PhotoImage] = []
             self._image_refs.append(self._photo)
 
     def set_key(self, key: Key):
         """Set associated key."""
         self._key = key
 
-    def get_key(self) -> Optional[Key]:
+    def get_key(self) -> Key | None:
         """Get associated key."""
         return self._key
 

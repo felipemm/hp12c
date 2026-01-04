@@ -5,13 +5,12 @@ Loads language strings from XML files similar to Java StringList.
 
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import Dict, Optional
 
 
 class LanguageLoader:
     """Loads language strings from XML files."""
 
-    def __init__(self, language: str = "en", base_path: Optional[Path] = None):
+    def __init__(self, language: str = "en", base_path: Path | None = None):
         """Initialize language loader.
 
         Args:
@@ -20,9 +19,9 @@ class LanguageLoader:
         """
         self._language = language
         self._base_path = base_path
-        self._strings: Dict[str, str] = {}
-        self._shortcuts: Dict[str, str] = {}
-        self._descriptions: Dict[str, str] = {}
+        self._strings: dict[str, str] = {}
+        self._shortcuts: dict[str, str] = {}
+        self._descriptions: dict[str, str] = {}
         self._load_language()
 
     def _load_language(self):

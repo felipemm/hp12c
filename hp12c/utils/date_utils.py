@@ -4,6 +4,7 @@ Ported from Java Date.java.
 """
 
 import datetime
+
 from hp12c.hp12c_math.number import Number
 from hp12c.model.stack import Stack
 

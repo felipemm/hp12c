@@ -3,14 +3,14 @@ Program memory for HP12C calculator.
 Ported from Java ProgramMemory.java.
 """
 
-from typing import List, Optional
+
 from hp12c.model.step import Step
 
 
 class ProgramMemory:
     """Manages program memory and execution."""
 
-    def __init__(self, size: int = 1000, prg: Optional[List[Step]] = None):
+    def __init__(self, size: int = 1000, prg: list[Step] | None = None):
         """Initialize program memory."""
         if prg is not None:
             self._prg = prg
@@ -52,13 +52,13 @@ class ProgramMemory:
         if self._idx < len(self._prg):
             self._prg[self._idx] = stp
 
-    def get(self, idx: int) -> Optional[Step]:
+    def get(self, idx: int) -> Step | None:
         """Get step at index."""
         if idx < len(self._prg):
             return self._prg[idx]
         return None
 
-    def get_current(self) -> Optional[Step]:
+    def get_current(self) -> Step | None:
         """Get step at current index."""
         if self._idx < len(self._prg):
             return self._prg[self._idx]
@@ -78,39 +78,39 @@ class ProgramMemory:
             return True
         return False
 
-    def set_modifier(self, mod: int, idx: Optional[int] = None):
+    def set_modifier(self, mod: int, idx: int | None = None):
         """Set modifier."""
         target_idx = idx if idx is not None else self._idx
         if target_idx < len(self._prg):
             self._prg[target_idx].set_modifier(mod)
 
-    def set_key(self, key: int, idx: Optional[int] = None):
+    def set_key(self, key: int, idx: int | None = None):
         """Set key."""
         target_idx = idx if idx is not None else self._idx
         if target_idx < len(self._prg):
             self._prg[target_idx].set_key(key)
 
-    def set_complement(self, cpm: int, idx: Optional[int] = None):
+    def set_complement(self, cpm: int, idx: int | None = None):
         """Set complement."""
         target_idx = idx if idx is not None else self._idx
         if target_idx < len(self._prg):
             self._prg[target_idx].set_complement(cpm)
 
-    def get_modifier(self, idx: Optional[int] = None) -> int:
+    def get_modifier(self, idx: int | None = None) -> int:
         """Get modifier."""
         target_idx = idx if idx is not None else self._idx
         if target_idx < len(self._prg):
             return self._prg[target_idx].get_modifier()
         return -1
 
-    def get_key(self, idx: Optional[int] = None) -> int:
+    def get_key(self, idx: int | None = None) -> int:
         """Get key."""
         target_idx = idx if idx is not None else self._idx
         if target_idx < len(self._prg):
             return self._prg[target_idx].get_key()
         return -1
 
-    def get_complement(self, idx: Optional[int] = None) -> int:
+    def get_complement(self, idx: int | None = None) -> int:
         """Get complement."""
         target_idx = idx if idx is not None else self._idx
         if target_idx < len(self._prg):

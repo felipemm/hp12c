@@ -4,9 +4,9 @@ Ported from Java FinanceMemory.java.
 """
 
 import math
-from typing import List, Optional
-from hp12c.hp12c_math.number import Number
+
 from hp12c.calculator.exceptions import CalculatorException, Error
+from hp12c.hp12c_math.number import Number
 from hp12c.utils.date import Date
 
 
@@ -16,17 +16,29 @@ class FinanceMemory:
     YEAR_360 = Number.n(360.0)
     YEAR_365 = Number.n(365.0)
 
-    def __init__(self, size: int = 5, fin: Optional[List[Number]] = None,
-                 n: Optional[Number] = None, i: Optional[Number] = None,
-                 pv: Optional[Number] = None, pmt: Optional[Number] = None,
-                 fv: Optional[Number] = None):
+    def __init__(
+        self,
+        size: int = 5,
+        fin: list[Number] | None = None,
+        n: Number | None = None,
+        i: Number | None = None,
+        pv: Number | None = None,
+        pmt: Number | None = None,
+        fv: Number | None = None,
+    ):
         """Initialize financial memory."""
         if fin is not None:
             self._fin = fin
         else:
             self._fin = [Number.ZERO] * size
 
-        if n is not None and i is not None and pv is not None and pmt is not None and fv is not None:
+        if (
+            n is not None
+            and i is not None
+            and pv is not None
+            and pmt is not None
+            and fv is not None
+        ):
             self._fin[0] = n
             self._fin[1] = i
             self._fin[2] = pv
@@ -53,11 +65,11 @@ class FinanceMemory:
         """Get memory size."""
         return len(self._fin)
 
-    def set_array(self, fin: List[Number]):
+    def set_array(self, fin: list[Number]):
         """Set memory array."""
         self._fin = fin
 
-    def get_array(self) -> List[Number]:
+    def get_array(self) -> list[Number]:
         """Get memory array (returns direct reference, matching Java behavior)."""
         return self._fin
 
@@ -143,14 +155,14 @@ class FinanceMemory:
         """Calculate simple interest."""
         return pv.multiply(i.divide(Number.HUNDRED)).multiply(n).negate()
 
-    def simple_interest(self) -> List[Number]:
+    def simple_interest(self) -> list[Number]:
         """Calculate simple interest for 360 and 365 day years."""
         _n = self.get_n()
         _i = self.get_i()
         _pv = self.get_pv()
         tmp = [
             FinanceMemory._simple_interest(_n, _i.divide(self.YEAR_360), _pv),
-            FinanceMemory._simple_interest(_n, _i.divide(self.YEAR_365), _pv)
+            FinanceMemory._simple_interest(_n, _i.divide(self.YEAR_365), _pv),
         ]
         return tmp
 
@@ -190,7 +202,11 @@ class FinanceMemory:
             tmp[2] = math.pow(1.0 + i, 0.0 - n)
             fv = -((pv + tmp[0] * pmt * tmp[1]) / tmp[2])
         else:
-            tmp[0] = 1.0 + i * FinanceMemory._frac_part(n) if c == 0.0 else math.pow(1.0 + i, FinanceMemory._frac_part(n))
+            tmp[0] = (
+                1.0 + i * FinanceMemory._frac_part(n)
+                if c == 0.0
+                else math.pow(1.0 + i, FinanceMemory._frac_part(n))
+            )
             tmp[1] = 1.0 + i * beg
             tmp[2] = (1.0 - math.pow(1.0 + i, 0.0 - FinanceMemory._int_part(n))) / i
             tmp[3] = math.pow(1.0 + i, 0.0 - FinanceMemory._int_part(n))
@@ -208,7 +224,7 @@ class FinanceMemory:
         return Number.n(FinanceMemory._period(_i, _pv, _pmt, _fv, _begin, _c))
 
     @staticmethod
-    def _period(i: float, pv: float, pmt: float, fv: float, beg: float, c: float) -> float:
+    def _period(i: float, pv: float, pmt: float, fv: float, beg: float, _c: float) -> float:
         """Calculate number of periods (static helper)."""
         n = 0.0
         tmp = [0.0] * 3
@@ -218,9 +234,14 @@ class FinanceMemory:
         if i <= -100.0:
             raise CalculatorException(Error.ERROR_CI, "Compound Interest Error: i <= -100")
         if i == 0.0 and pmt == 0.0:
-            raise CalculatorException(Error.ERROR_CI, "Compound Interest Error: i == 0 and PMT == 0")
+            raise CalculatorException(
+                Error.ERROR_CI, "Compound Interest Error: i == 0 and PMT == 0"
+            )
         if pmt >= fv * d and pmt <= -pv * d:
-            raise CalculatorException(Error.ERROR_CI, "Compound Interest Error: PMT between (FV * d) and (-PV * d), inclusive.")
+            raise CalculatorException(
+                Error.ERROR_CI,
+                "Compound Interest Error: PMT between (FV * d) and (-PV * d), inclusive.",
+            )
         tmp[0] = pmt - (i := i / 100.0) * fv + i * pmt * beg
         tmp[1] = pmt + i * pv + i * pmt * beg
         tmp[2] = math.log(i + 1.0)
@@ -252,7 +273,11 @@ class FinanceMemory:
             tmp[2] = math.pow(1.0 + i, 0.0 - n)
             pv = -(tmp[0] * pmt * tmp[1] + fv * tmp[2])
         else:
-            tmp[0] = 1.0 + i * FinanceMemory._frac_part(n) if c == 0.0 else math.pow(1.0 + i, FinanceMemory._frac_part(n))
+            tmp[0] = (
+                1.0 + i * FinanceMemory._frac_part(n)
+                if c == 0.0
+                else math.pow(1.0 + i, FinanceMemory._frac_part(n))
+            )
             tmp[1] = 1.0 + i * begin
             tmp[2] = (1.0 - math.pow(1.0 + i, 0.0 - FinanceMemory._int_part(n))) / i
             tmp[3] = math.pow(1.0 + i, 0.0 - FinanceMemory._int_part(n))
@@ -270,7 +295,9 @@ class FinanceMemory:
         return Number.n(FinanceMemory._price_payment(_n, _i, _pv, _fv, _begin, _c))
 
     @staticmethod
-    def _price_payment(_n: float, _i: float, _pv: float, _fv: float, _begin: float, _c: float) -> float:
+    def _price_payment(
+        _n: float, _i: float, _pv: float, _fv: float, _begin: float, _c: float
+    ) -> float:
         """Calculate payment (static helper with fractional periods)."""
         n_frac = Number.n(_n).fractional_part().d()
         if _n == 0.0:
@@ -313,9 +340,13 @@ class FinanceMemory:
     def _rate(n: float, pv: float, pmt: float, fv: float, beg: float, c: float) -> float:
         """Calculate interest rate using bisection method (static helper)."""
         if pmt == 0.0 and n < 0.0:
-            raise CalculatorException(Error.ERROR_CI, "Compound Interest Error: no solution exists for N.")
+            raise CalculatorException(
+                Error.ERROR_CI, "Compound Interest Error: no solution exists for N."
+            )
         if (pv > 0.0 and fv > 0.0) or (pv < 0.0 and fv < 0.0):
-            raise CalculatorException(Error.ERROR_CI, "Compound Interest Error: both PV and FV are positive or negative.")
+            raise CalculatorException(
+                Error.ERROR_CI, "Compound Interest Error: both PV and FV are positive or negative."
+            )
         init_interest = -1.0
         final_interest = 99999.0
         suposed_interest = 0.0
@@ -330,7 +361,7 @@ class FinanceMemory:
             suposed_interest = (final_interest + init_interest) / 2.0
             suposed_payment = FinanceMemory._price_payment(n, suposed_interest, pv, fv, beg, c)
             suposed_difference = abs(pmt - suposed_payment)
-            if suposed_difference > 1.0E-9:
+            if suposed_difference > 1.0e-9:
                 if suposed_payment > pmt:
                     final_interest = suposed_interest
                 else:
@@ -345,14 +376,14 @@ class FinanceMemory:
             raise CalculatorException(Error.ERROR_CI, "Compound Interest Error: no solution found.")
         return final_interest
 
-    def irr(self, cf: List[List[Number]]) -> Number:
+    def irr(self, cf: list[list[Number]]) -> Number:
         """Calculate Internal Rate of Return."""
         _n = self.get_n().d()
         doubles = [[cf[i][j].d() for j in range(len(cf[0]))] for i in range(len(cf))]
         return Number.n(FinanceMemory._irr(_n, doubles))
 
     @staticmethod
-    def _irr(n: float, cf: List[List[float]]) -> float:
+    def _irr(n: float, cf: list[list[float]]) -> float:
         """Calculate IRR (static helper)."""
         IRRBegin = 0.0
         npv = 0.0
@@ -360,8 +391,6 @@ class FinanceMemory:
         u = 0.0
         cont = 0.0
         expo = 0.0
-        if cf is None:
-            return 0.0
         if len(cf) < n:
             return 0.0
         sign_before = True
@@ -401,7 +430,7 @@ class FinanceMemory:
             m += 1
         return irr
 
-    def npv(self, cf: List[List[Number]]) -> Number:
+    def npv(self, cf: list[list[Number]]) -> Number:
         """Calculate Net Present Value."""
         _n = self.get_n().d()
         _i = self.get_i().d()
@@ -409,7 +438,7 @@ class FinanceMemory:
         return Number.n(FinanceMemory._npv(_n, _i, doubles))
 
     @staticmethod
-    def _npv(n: float, i: float, cf: List[List[float]]) -> float:
+    def _npv(n: float, i: float, cf: list[list[float]]) -> float:
         """Calculate NPV (static helper)."""
         if i <= -100.0:
             raise CalculatorException(Error.ERROR_CI, "Compound Interest Error: i <= -100")
@@ -417,8 +446,6 @@ class FinanceMemory:
         u = 1.0 + i / 100.0
         cont = 0.0
         expo = 0.0
-        if cf is None:
-            return 0.0
         if len(cf) < n:
             return 0.0
         a = 0
@@ -440,7 +467,7 @@ class FinanceMemory:
             j += 1
         return npv
 
-    def amortization(self, x: Number, precision: int) -> List[Number]:
+    def amortization(self, x: Number, precision: int) -> list[Number]:
         """Calculate amortization."""
         _x = x.d()
         _precision = float(precision)
@@ -453,7 +480,9 @@ class FinanceMemory:
         return [Number.n(d) for d in doubles]
 
     @staticmethod
-    def _amortization(x: float, n: float, i: float, pv: float, pmt: float, begin: float, precision: float) -> List[float]:
+    def _amortization(
+        x: float, n: float, i: float, pv: float, pmt: float, begin: float, precision: float
+    ) -> list[float]:
         """Calculate amortization (static helper)."""
         tmp = [0.0] * 5
         INT = 0.0
@@ -483,7 +512,7 @@ class FinanceMemory:
         tmp[4] = n
         return tmp
 
-    def depreciation_sl(self, x: Number) -> List[Number]:
+    def depreciation_sl(self, x: Number) -> list[Number]:
         """Calculate straight-line depreciation."""
         _n = self.get_n().d()
         _i = self.get_i().d()
@@ -494,7 +523,7 @@ class FinanceMemory:
         return [Number.n(d) for d in doubles]
 
     @staticmethod
-    def _sl_depreciation(n: float, i: float, pv: float, fv: float, x: float) -> List[float]:
+    def _sl_depreciation(n: float, _i: float, pv: float, fv: float, x: float) -> list[float]:
         """Calculate straight-line depreciation (static helper)."""
         cost = pv
         sell = fv
@@ -518,7 +547,7 @@ class FinanceMemory:
         tmp[1] = rest
         return tmp
 
-    def depreciation_syd(self, x: Number) -> List[Number]:
+    def depreciation_syd(self, x: Number) -> list[Number]:
         """Calculate sum-of-years digits depreciation."""
         _n = self.get_n().d()
         _i = self.get_i().d()
@@ -529,7 +558,7 @@ class FinanceMemory:
         return [Number.n(d) for d in doubles]
 
     @staticmethod
-    def _soyd_depreciation(n: float, i: float, pv: float, fv: float, x: float) -> List[float]:
+    def _soyd_depreciation(n: float, _i: float, pv: float, fv: float, x: float) -> list[float]:
         """Calculate sum-of-years digits depreciation (static helper)."""
         cost = pv
         sell = fv
@@ -556,7 +585,7 @@ class FinanceMemory:
         tmp[1] = rest
         return tmp
 
-    def depreciation_db(self, x: Number) -> List[Number]:
+    def depreciation_db(self, x: Number) -> list[Number]:
         """Calculate declining balance depreciation."""
         _n = self.get_n().d()
         _i = self.get_i().d()
@@ -567,7 +596,7 @@ class FinanceMemory:
         return [Number.n(d) for d in doubles]
 
     @staticmethod
-    def _db_depreciation(n: float, i: float, pv: float, fv: float, x: float) -> List[float]:
+    def _db_depreciation(n: float, i: float, pv: float, fv: float, x: float) -> list[float]:
         """Calculate declining balance depreciation (static helper)."""
         cost = pv
         sell = fv
@@ -592,7 +621,7 @@ class FinanceMemory:
         tmp[1] = rest
         return tmp
 
-    def bond_price(self, y: Date, x: Date) -> List[Number]:
+    def bond_price(self, y: Date, x: Date) -> list[Number]:
         """Calculate bond price."""
         _i = self.get_i().d()
         _pmt = self.get_pmt().d()
@@ -600,7 +629,7 @@ class FinanceMemory:
         return [Number.n(d) for d in doubles]
 
     @staticmethod
-    def _bond_price(i: float, pmt: float, y: Date, x: Date) -> List[float]:
+    def _bond_price(i: float, pmt: float, y: Date, x: Date) -> list[float]:
         """Calculate bond price (static helper)."""
         if x is None or not x.is_valid():
             raise CalculatorException(Error.ERROR_CAL, "invalid x date (maturity)")
@@ -608,7 +637,6 @@ class FinanceMemory:
             raise CalculatorException(Error.ERROR_CAL, "invalid y date (buy)")
         if i <= -100.0:
             raise CalculatorException(Error.ERROR_CI, "i <= -100")
-        dim = 0.0
         dsm = 0.0
         dcs = 0.0
         e = 0.0
@@ -616,7 +644,6 @@ class FinanceMemory:
         n = 0.0
         cpn = 0.0
         yield_val = 0.0
-        price = 0.0
         rdv = 0.0
         tmp = [0.0] * 2
         yield_val = i
@@ -645,7 +672,9 @@ class FinanceMemory:
             tmp[1] = 0.0
             k = 1
             while float(k) <= n:
-                tmp[1] = tmp[1] + cpn / 2.0 / math.pow(1.0 + yield_val / 200.0, float(k - 1) + dcs / e)
+                tmp[1] = tmp[1] + cpn / 2.0 / math.pow(
+                    1.0 + yield_val / 200.0, float(k - 1) + dcs / e
+                )
                 k += 1
             tmp[0] = tmp[0] + tmp[1]
         tmp[1] = cpn / 2.0 * (dsc / e)
@@ -654,7 +683,7 @@ class FinanceMemory:
         tmp[1] = tmp[1]  # Redundant assignment matching Java code
         return tmp
 
-    def bond_price_old(self, y: Date, x: Date) -> List[Number]:
+    def bond_price_old(self, y: Date, x: Date) -> list[Number]:
         """Calculate bond price (OLD version - same as bond_price)."""
         _i = self.get_i().d()
         _pmt = self.get_pmt().d()
@@ -662,7 +691,7 @@ class FinanceMemory:
         return [Number.n(d) for d in doubles]
 
     @staticmethod
-    def bond_yield(pv: float, pmt: float, y: Date, x: Date) -> float:
+    def bond_yield(_pv: float, _pmt: float, _y: Date, _x: Date) -> float:
         """Calculate bond yield (placeholder - returns 0.0)."""
         return 0.0
 

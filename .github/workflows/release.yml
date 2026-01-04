@@ -1,0 +1,210 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on tags like v1.0.0, v2.1.3, etc.
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            artifact_name: hp12c-linux
+          - os: macos-latest
+            platform: macos
+            artifact_name: hp12c-macos
+          - os: windows-latest
+            platform: windows
+            artifact_name: hp12c-windows
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install pyinstaller
+
+      - name: Build application
+        run: |
+          if [ "${{ matrix.platform }}" == "macos" ]; then
+            make build-macos
+          elif [ "${{ matrix.platform }}" == "windows" ]; then
+            make build-windows
+          else
+            make build-linux
+          fi
+
+      - name: Prepare artifacts (macOS)
+        if: matrix.platform == 'macos'
+        run: |
+          cd dist
+          # Create a zip file of the .app bundle
+          zip -r ${GITHUB_REF_NAME}-macos.zip hp12c.app
+          # Also create a .dmg if needed (optional)
+          # hdiutil create -volname "HP12C" -srcfolder hp12c.app -ov -format UDZO ${GITHUB_REF_NAME}-macos.dmg
+
+      - name: Prepare artifacts (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          cd dist
+          if (Test-Path "hp12c.exe") {
+            Compress-Archive -Path hp12c.exe -DestinationPath "${env:GITHUB_REF_NAME}-windows.zip" -Force
+          }
+
+      - name: Prepare artifacts (Linux)
+        if: matrix.platform == 'linux'
+        run: |
+          cd dist
+          # Create a zip file of the executable
+          if [ -d "hp12c" ]; then
+            zip -r ${GITHUB_REF_NAME}-linux.zip hp12c/
+          elif [ -f "hp12c" ]; then
+            zip ${GITHUB_REF_NAME}-linux.zip hp12c
+          fi
+
+      - name: Upload macOS artifact
+        if: matrix.platform == 'macos'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/*.zip
+          retention-days: 30
+
+      - name: Upload Windows artifact
+        if: matrix.platform == 'windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/*.zip
+          retention-days: 30
+
+      - name: Upload Linux artifact
+        if: matrix.platform == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/*.zip
+          retention-days: 30
+
+  create-release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Extract version from tag
+        id: tag
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          VERSION=${TAG#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Extract changelog
+        id: changelog
+        run: |
+          python3 << 'EOF'
+          import re
+          import sys
+
+          version = "${{ steps.tag.outputs.version }}"
+
+          try:
+              with open("CHANGELOG.md", "r", encoding="utf-8") as f:
+                  content = f.read()
+
+              # Find the section for this version
+              pattern = rf"## \[{re.escape(version)}\][^\n]*\n(.*?)(?=\n## |\Z)"
+              match = re.search(pattern, content, re.DOTALL)
+
+              if match:
+                  changelog = match.group(1).strip()
+                  # Remove the date line if present
+                  changelog = re.sub(r"^-\s*\d{4}-\d{2}-\d{2}\s*$", "", changelog, flags=re.MULTILINE).strip()
+                  print(changelog)
+              else:
+                  print(f"Release {version}")
+          except Exception:
+              print(f"Release {version}")
+          EOF
+        continue-on-error: true
+
+      - name: Set changelog output
+        id: set_changelog
+        run: |
+          CHANGELOG=$(python3 << 'EOF'
+          import re
+          version = "${{ steps.tag.outputs.version }}"
+          try:
+              with open("CHANGELOG.md", "r", encoding="utf-8") as f:
+                  content = f.read()
+              pattern = rf"## \[{re.escape(version)}\][^\n]*\n(.*?)(?=\n## |\Z)"
+              match = re.search(pattern, content, re.DOTALL)
+              if match:
+                  changelog = match.group(1).strip()
+                  changelog = re.sub(r"^-\s*\d{4}-\d{2}-\d{2}\s*$", "", changelog, flags=re.MULTILINE).strip()
+                  print(changelog)
+              else:
+                  print(f"Release {version}")
+          except Exception:
+              print(f"Release {version}")
+          EOF
+          )
+          {
+            echo "body<<EOF"
+            echo "$CHANGELOG"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Release ${{ steps.tag.outputs.version }}
+          body: |
+            ## Release ${{ steps.tag.outputs.version }}
+
+            ${{ steps.set_changelog.outputs.body }}
+
+            ### Downloads
+
+            - **macOS**: Download `${{ steps.tag.outputs.tag }}-macos.zip` and extract the `hp12c.app` bundle
+            - **Windows**: Download `${{ steps.tag.outputs.tag }}-windows.zip` and extract `hp12c.exe`
+            - **Linux**: Download `${{ steps.tag.outputs.tag }}-linux.zip` and extract the executable
+
+            ### Installation
+
+            - **macOS**: Drag `hp12c.app` to your Applications folder
+            - **Windows**: Run `hp12c.exe` from the extracted location
+            - **Linux**: Make executable with `chmod +x hp12c` and run `./hp12c`
+          files: |
+            artifacts/hp12c-macos/*.zip
+            artifacts/hp12c-windows/*.zip
+            artifacts/hp12c-linux/*.zip
+          draft: false
+          prerelease: false

@@ -5,14 +5,14 @@ Shows all calculator registers (Stack, Finance, General Memory).
 
 import tkinter as tk
 from tkinter import ttk
-from typing import Optional
+
 from hp12c.calculator.calculator import Calculator
 
 
 class RegisterViewWindow:
     """Window showing all calculator registers."""
 
-    def __init__(self, parent, calculator: Optional[Calculator], main_window=None):
+    def __init__(self, parent, calculator: Calculator | None, main_window=None):
         """Initialize register view window.
 
         Args:
@@ -23,7 +23,7 @@ class RegisterViewWindow:
         self._parent = parent
         self._calculator = calculator
         self._main_window = main_window
-        self._window = None
+        self._window: tk.Toplevel | None = None
         self._build()
 
     def _build(self):
@@ -104,8 +104,13 @@ class RegisterViewWindow:
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
         # Create treeview
-        tree = ttk.Treeview(frame, columns=("value", "times"), show="tree headings", height=15,
-                           yscrollcommand=scrollbar.set)
+        tree = ttk.Treeview(
+            frame,
+            columns=("value", "times"),
+            show="tree headings",
+            height=15,
+            yscrollcommand=scrollbar.set,
+        )
         tree.heading("#0", text="Register")
         tree.heading("value", text="Value")
         tree.heading("times", text="Times")
@@ -132,7 +137,9 @@ class RegisterViewWindow:
         ]
 
         for i, (label_text, key) in enumerate(labels):
-            ttk.Label(info_frame, text=f"{label_text}:").grid(row=i, column=0, sticky=tk.W, padx=5, pady=2)
+            ttk.Label(info_frame, text=f"{label_text}:").grid(
+                row=i, column=0, sticky=tk.W, padx=5, pady=2
+            )
             value_label = ttk.Label(info_frame, text="", font=("Courier", 10))
             value_label.grid(row=i, column=1, sticky=tk.W, padx=5, pady=2)
             self._display_labels[key] = value_label
@@ -143,7 +150,7 @@ class RegisterViewWindow:
             return
 
         # Update stack registers
-        if hasattr(self, '_stack_tree'):
+        if hasattr(self, "_stack_tree"):
             # Clear existing items
             for item in self._stack_tree.get_children():
                 self._stack_tree.delete(item)
@@ -162,7 +169,7 @@ class RegisterViewWindow:
                 self._stack_tree.insert("", tk.END, text="LastX", values=(str(last_x),))
 
         # Update finance registers
-        if hasattr(self, '_finance_tree'):
+        if hasattr(self, "_finance_tree"):
             # Clear existing items
             for item in self._finance_tree.get_children():
                 self._finance_tree.delete(item)
@@ -181,7 +188,7 @@ class RegisterViewWindow:
                     self._finance_tree.insert("", tk.END, text=name, values=(value_str,))
 
         # Update general memory
-        if hasattr(self, '_memory_tree'):
+        if hasattr(self, "_memory_tree"):
             # Clear existing items
             for item in self._memory_tree.get_children():
                 self._memory_tree.delete(item)
@@ -191,10 +198,12 @@ class RegisterViewWindow:
                 size = memory.get_size()
                 for i in range(size):
                     value, times = memory.get_with_times(i)
-                    self._memory_tree.insert("", tk.END, text=f"Mem{i}", values=(str(value), str(times)))
+                    self._memory_tree.insert(
+                        "", tk.END, text=f"Mem{i}", values=(str(value), str(times))
+                    )
 
         # Update display
-        if hasattr(self, '_display_labels'):
+        if hasattr(self, "_display_labels"):
             display = self._calculator.get_display()
             if display:
                 self._display_labels["value"].config(text=display.get_string())
@@ -205,7 +214,9 @@ class RegisterViewWindow:
                 mode = display.get_mode()
                 self._display_labels["mode"].config(text=mode_names.get(mode, str(mode)))
                 self._display_labels["precision"].config(text=str(display.get_precision()))
-                self._display_labels["comma"].config(text="Comma (,)" if display.get_comma() else "Dot (.)")
+                self._display_labels["comma"].config(
+                    text="Comma (,)" if display.get_comma() else "Dot (.)"
+                )
 
     def show(self):
         """Show window."""

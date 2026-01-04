@@ -3,14 +3,15 @@ Instruction class for history.
 Ported from Java Instruction.java.
 """
 
-from hp12c.model.step import Step
+
 from hp12c.model.stack import Stack
+from hp12c.model.step import Step
 
 
 class Instruction:
     """Represents an instruction with step and stack state."""
 
-    def __init__(self, stp: Step = None, stk: Stack = None):
+    def __init__(self, stp: Step | None = None, stk: Stack | None = None):
         """Initialize instruction."""
         if stp is not None:
             self._stp = Step(stp=stp)

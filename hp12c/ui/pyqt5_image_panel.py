@@ -3,22 +3,23 @@ PyQt5 image panel widget for HP12C calculator.
 Equivalent to Tkinter ImagePanel but using PyQt5.
 """
 
-from PyQt5.QtWidgets import QWidget
-from PyQt5.QtGui import QPainter, QPixmap
-from PyQt5.QtCore import Qt
+
 from PIL import Image
-from typing import Optional
-from pathlib import Path
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPainter, QPixmap
+from PyQt5.QtWidgets import QWidget
 
 
 class PyQt5ImagePanel(QWidget):
     """Custom widget with background image support using PyQt5."""
 
-    def __init__(self, parent=None, image_path: Optional[str] = None, image: Optional[Image.Image] = None):
+    def __init__(
+        self, parent=None, image_path: str | None = None, image: Image.Image | None = None
+    ):
         """Initialize image panel."""
         super().__init__(parent)
-        self._pixmap = None
-        self._image = None
+        self._pixmap: QPixmap | None = None
+        self._image: Image.Image | None = None
 
         if image_path:
             self.set_image(image_path)
@@ -47,12 +48,13 @@ class PyQt5ImagePanel(QWidget):
             try:
                 # Convert PIL Image to QPixmap
                 # PIL Image to bytes, then to QPixmap
-                from PyQt5.QtGui import QImage
                 import io
+
+                from PyQt5.QtGui import QImage
 
                 # Convert PIL Image to bytes
                 img_bytes = io.BytesIO()
-                self._image.save(img_bytes, format='PNG')
+                self._image.save(img_bytes, format="PNG")
                 img_bytes.seek(0)
 
                 # Create QImage from bytes
@@ -65,7 +67,7 @@ class PyQt5ImagePanel(QWidget):
                 print(f"Error converting image to QPixmap: {e}")
                 self._pixmap = None
 
-    def paintEvent(self, event):
+    def paintEvent(self, _event):
         """Paint background image.
 
         Matches Java ImagePanel.paintComponent behavior:
@@ -81,14 +83,16 @@ class PyQt5ImagePanel(QWidget):
             scaled_pixmap = self._pixmap.scaled(
                 self.width(),
                 self.height(),
-                Qt.IgnoreAspectRatio,
-                Qt.SmoothTransformation
+                Qt.AspectRatioMode.IgnoreAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
             )
             # Draw at (0, 0) to match Java/Tkinter behavior (not centered)
             painter.drawPixmap(0, 0, scaled_pixmap)
         else:
             # Fill with black if no image
-            painter.fillRect(self.rect(), Qt.black)
+            from PyQt5.QtGui import QColor
+
+            painter.fillRect(self.rect(), QColor(0, 0, 0))
 
     def resizeEvent(self, event):
         """Handle resize event."""

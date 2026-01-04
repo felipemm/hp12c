@@ -4,9 +4,9 @@ Defines the common interface that both Tkinter and PyQt5 implementations must pr
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple
-from hp12c.calculator.key import Key
+
 from hp12c.calculator.config import Configuration
+from hp12c.calculator.key import Key
 
 
 class BaseMainWindow(ABC):
@@ -48,7 +48,7 @@ class BaseMainWindow(ABC):
         pass
 
     @abstractmethod
-    def get_window_location(self) -> Tuple[int, int]:
+    def get_window_location(self) -> tuple[int, int]:
         """Get window location."""
         pass
 

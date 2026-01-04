@@ -3,16 +3,14 @@ Display formatting for HP12C calculator.
 Ported from Java Display.java.
 """
 
-import re
-from typing import Optional
 from hp12c.hp12c_math.number import Number
 
 
 class Display:
     """Manages calculator display formatting and input."""
 
-    MIN_VALUE = 1.0E-10
-    MAX_VALUE = 1.0E10
+    MIN_VALUE = 1.0e-10
+    MAX_VALUE = 1.0e10
     ZEROFILL = "0000000000"
 
     STATUS_READY = 0
@@ -41,7 +39,7 @@ class Display:
         self._pause = False
         self._comma = False
         self._prec = 9
-        self._bf = []
+        self._bf: list[str] | None = []
         self.clear()
 
     def init(self):
@@ -127,7 +125,7 @@ class Display:
             return
 
         if self._mode == 0:  # Normal mode
-            if ch == '-':
+            if ch == "-":
                 self._neg = not self._neg
                 return
 
@@ -137,7 +135,7 @@ class Display:
             if self._full:
                 return
 
-            if ch == '.':
+            if ch == ".":
                 if not self._dot:
                     if self._status != 1:
                         self._dot = True
@@ -150,7 +148,7 @@ class Display:
                 return
 
             if self._status != 1:
-                if ch == '0':
+                if ch == "0":
                     self._buf = "0"
                     self._status = 1
                     return
@@ -170,7 +168,7 @@ class Display:
                 return
 
         elif self._mode == 1:  # Exponential mode
-            if ch == '-':
+            if ch == "-":
                 if self._status != 1:
                     self._neg = not self._neg
                     return
@@ -201,7 +199,6 @@ class Display:
 
     def input_program_step(self, idx: int, stp):
         """Input program step."""
-        from hp12c.model.step import Step
         self._stp = [idx, stp.get_modifier(), stp.get_key(), stp.get_complement()]
 
     def get_string(self) -> str:
@@ -212,7 +209,9 @@ class Display:
         if self._mode != 2:  # Not program mode
             if self._status != 1:
                 self.update_value()
-                if (abs(self._val) > Display.MIN_VALUE and abs(self._val) < Display.MAX_VALUE) or self._val == 0.0:
+                if (
+                    abs(self._val) > Display.MIN_VALUE and abs(self._val) < Display.MAX_VALUE
+                ) or self._val == 0.0:
                     self._get_normal_string()
                 else:
                     self._get_exponential_string()
@@ -225,16 +224,20 @@ class Display:
 
         return self._str
 
+    def get_text(self) -> str:
+        """Get display text (alias for get_string for test compatibility)."""
+        return self.get_string()
+
     def _digit_separators(self):
         """Add digit separators (thousands separators)."""
         grpcount = 0
-        grpchar = ','
-        decchar = '.'
+        grpchar = ","
+        decchar = "."
 
         tmp = self._str.split(".")
         if self._comma:
-            grpchar = '.'
-            decchar = ','
+            grpchar = "."
+            decchar = ","
 
         revstr = ""
         for i in range(len(tmp[0]) - 1, -1, -1):
@@ -247,11 +250,11 @@ class Display:
             else:
                 revstr += tmp[0][i]
 
-        newstr = [''] * len(revstr)
+        newstr = [""] * len(revstr)
         for i in range(len(revstr)):
             newstr[len(revstr) - 1 - i] = revstr[i]
 
-        self._str = ''.join(newstr)
+        self._str = "".join(newstr)
         self._str += decchar + (tmp[1] if len(tmp) > 1 else "")
 
     def _get_exponential_string(self):
@@ -295,7 +298,11 @@ class Display:
                 self._str = f"{float(val_str):.{prec}f}"
             self._bf = self._str.split(".")
             self._str = self._bf[0] + "."
-            self._str = ("-" if self._neg else " ") + self._str + (self._bf[1] if len(self._bf) == 2 else "")
+            self._str = (
+                ("-" if self._neg else " ")
+                + self._str
+                + (self._bf[1] if len(self._bf) == 2 else "")
+            )
         elif self._dot:
             self._str = ("-" if self._neg else " ") + self._buf
         else:
@@ -317,7 +324,9 @@ class Display:
             c_str = Display.zero_pad(c, 3) if c > 99 else f"r{Display.zero_pad(c, 2)}"
             self._str = f"{Display.zero_pad(i, 3)}-  {Display.space_pad(k, 2)},{c_str}"
         elif m > -1 and k > -1:
-            self._str = f"{Display.zero_pad(i, 3)}-  {Display.space_pad(m, 2)},{Display.space_pad(k, 3)}"
+            self._str = (
+                f"{Display.zero_pad(i, 3)}-  {Display.space_pad(m, 2)},{Display.space_pad(k, 3)}"
+            )
         elif k > -1:
             self._str = f"{Display.zero_pad(i, 3)}-    {Display.space_pad(k, 3)}"
         else:
@@ -326,6 +335,7 @@ class Display:
     def get_mantissa(self) -> str:
         """Get mantissa string."""
         self._bf = self._buf.split(".")
+        assert self._bf is not None  # split() always returns a list
         rtn = self._bf[0] + (self._bf[1] if len(self._bf) == 2 else "")
         rtn += Display.ZEROFILL
         if len(rtn) > 10:
@@ -335,7 +345,9 @@ class Display:
     def set_value(self, val: Number):
         """Set display value from Number."""
         self._val = val.double_value()
-        if (abs(self._val) > Display.MIN_VALUE and abs(self._val) < Display.MAX_VALUE) or self._val == 0.0:
+        if (
+            abs(self._val) > Display.MIN_VALUE and abs(self._val) < Display.MAX_VALUE
+        ) or self._val == 0.0:
             self._buf = f"{val.abs().d():10.9f}"
             self._expo = 0
             self._neg = val.less_than(Number.ZERO)
@@ -383,7 +395,7 @@ class Display:
         """Zero-pad integer to specified size."""
         v_str = str(val)
         if len(v_str) < size:
-            return '0' * (size - len(v_str)) + v_str
+            return "0" * (size - len(v_str)) + v_str
         return v_str
 
     @staticmethod
@@ -391,5 +403,5 @@ class Display:
         """Space-pad integer to specified size."""
         v_str = str(val)
         if len(v_str) < size:
-            return ' ' * (size - len(v_str)) + v_str
+            return " " * (size - len(v_str)) + v_str
         return v_str

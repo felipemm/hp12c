@@ -4,8 +4,11 @@ Ported from Java Number.java using Python's Decimal instead of BigDecimal.
 """
 
 import math
-from decimal import Decimal, ROUND_HALF_UP, getcontext
-from typing import Union
+from decimal import ROUND_HALF_UP, Decimal, getcontext
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    pass
 
 
 class Number:
@@ -17,32 +20,32 @@ class Number:
 
     SCALE = 10
 
-    # Constants
-    ZERO = None
-    ONE = None
-    TWO = None
-    THREE = None
-    FOUR = None
-    FIVE = None
-    SIX = None
-    SEVEN = None
-    EIGHT = None
-    NINE = None
-    TEN = None
-    TWELVE = None
-    HUNDRED = None
-    THOUSAND = None
-    HALF = None
-    THIRD = None
-    FORTH = None
-    FITH = None
-    TENTH = None
-    CENT = None
-    THOUSANDTH = None
-    PI = None
-    E = None
+    # Constants - will be initialized after class definition
+    ZERO: "Number"
+    ONE: "Number"
+    TWO: "Number"
+    THREE: "Number"
+    FOUR: "Number"
+    FIVE: "Number"
+    SIX: "Number"
+    SEVEN: "Number"
+    EIGHT: "Number"
+    NINE: "Number"
+    TEN: "Number"
+    TWELVE: "Number"
+    HUNDRED: "Number"
+    THOUSAND: "Number"
+    HALF: "Number"
+    THIRD: "Number"
+    FORTH: "Number"
+    FITH: "Number"
+    TENTH: "Number"
+    CENT: "Number"
+    THOUSANDTH: "Number"
+    PI: "Number"
+    E: "Number"
 
-    def __init__(self, value: Union[Decimal, str, float, int] = 0):
+    def __init__(self, value: Decimal | str | float | int = 0):
         """
         Initialize Number. Private constructor - use getInstance() instead.
 
@@ -54,9 +57,9 @@ class Number:
         elif isinstance(value, str):
             try:
                 self._value = Decimal(value)
-            except Exception:
-                raise ValueError("Invalid number format")
-        elif isinstance(value, (int, float)):
+            except Exception as err:
+                raise ValueError("Invalid number format") from err
+        elif isinstance(value, int | float):
             if math.isnan(value):
                 raise ValueError("Value is not a number")
             if math.isinf(value):
@@ -65,31 +68,33 @@ class Number:
             self._value = Decimal(str(value))
         else:
             raise TypeError(f"Unsupported type: {type(value)}")
+            raise TypeError(f"Unsupported type: {type(value)}")
 
     def copy_value(self) -> Decimal:
         """Return a copy of the internal Decimal value."""
         return Decimal(self._value)
 
-    def copy(self) -> 'Number':
+    def get_value(self) -> Decimal:
+        """Get the internal Decimal value (alias for copy_value for test compatibility)."""
+        return self.copy_value()
+
+    def copy(self) -> "Number":
         """Return a copy of this Number."""
         return Number(self.copy_value())
 
     @staticmethod
-    def get_instance(value: Union[float, str, Decimal]) -> 'Number':
+    def get_instance(value: float | str | Decimal) -> "Number":
         """Factory method to create Number instances."""
-        if isinstance(value, Decimal):
-            return Number(value)
-        elif isinstance(value, str):
-            return Number(value)
-        elif isinstance(value, (int, float)):
+        if isinstance(value, Decimal | str | int | float):
             return Number(value)
         else:
             raise TypeError(f"Unsupported type: {type(value)}")
 
     @staticmethod
-    def random() -> 'Number':
+    def random() -> "Number":
         """Generate a random Number between 0 and 1."""
         import random
+
         return Number.get_instance(random.random())
 
     def is_zero(self) -> bool:
@@ -134,51 +139,55 @@ class Number:
         """Representation."""
         return f"Number({self._value})"
 
-    def equal_to(self, number: 'Number') -> bool:
+    def equal_to(self, number: "Number") -> bool:
         """Check if equal to another Number."""
         return self == number
 
-    def not_equal_to(self, number: 'Number') -> bool:
+    def equals(self, number: "Number") -> bool:
+        """Check if equal to another Number (alias for equal_to for test compatibility)."""
+        return self.equal_to(number)
+
+    def not_equal_to(self, number: "Number") -> bool:
         """Check if not equal to another Number."""
         return self != number
 
-    def greater_than(self, number: 'Number') -> bool:
+    def greater_than(self, number: "Number") -> bool:
         """Check if greater than another Number."""
         return self._value > number._value
 
-    def less_than(self, number: 'Number') -> bool:
+    def less_than(self, number: "Number") -> bool:
         """Check if less than another Number."""
         return self._value < number._value
 
-    def greater_than_or_equal_to(self, number: 'Number') -> bool:
+    def greater_than_or_equal_to(self, number: "Number") -> bool:
         """Check if greater than or equal to another Number."""
         return self._value >= number._value
 
-    def less_than_or_equal_to(self, number: 'Number') -> bool:
+    def less_than_or_equal_to(self, number: "Number") -> bool:
         """Check if less than or equal to another Number."""
         return self._value <= number._value
 
-    def eq(self, number: 'Number') -> bool:
+    def eq(self, number: "Number") -> bool:
         """Short form of equal_to."""
         return self.equal_to(number)
 
-    def ne(self, number: 'Number') -> bool:
+    def ne(self, number: "Number") -> bool:
         """Short form of not_equal_to."""
         return self.not_equal_to(number)
 
-    def gt(self, number: 'Number') -> bool:
+    def gt(self, number: "Number") -> bool:
         """Short form of greater_than."""
         return self.greater_than(number)
 
-    def lt(self, number: 'Number') -> bool:
+    def lt(self, number: "Number") -> bool:
         """Short form of less_than."""
         return self.less_than(number)
 
-    def gte(self, number: 'Number') -> bool:
+    def gte(self, number: "Number") -> bool:
         """Short form of greater_than_or_equal_to."""
         return self.greater_than_or_equal_to(number)
 
-    def lte(self, number: 'Number') -> bool:
+    def lte(self, number: "Number") -> bool:
         """Short form of less_than_or_equal_to."""
         return self.less_than_or_equal_to(number)
 
@@ -199,36 +208,16 @@ class Number:
         return float(self._value)
 
     @staticmethod
-    def n(value: Union[float, str, Decimal]) -> 'Number':
+    def n(value: float | str | Decimal) -> "Number":
         """Short form of get_instance."""
         return Number.get_instance(value)
-
-    @staticmethod
-    def i(number: 'Number') -> int:
-        """Static method to get int value."""
-        return number.int_value()
-
-    @staticmethod
-    def l(number: 'Number') -> int:
-        """Static method to get long value."""
-        return number.long_value()
-
-    @staticmethod
-    def f(number: 'Number') -> float:
-        """Static method to get float value."""
-        return number.float_value()
-
-    @staticmethod
-    def d(number: 'Number') -> float:
-        """Static method to get double value."""
-        return number.double_value()
 
     # Instance methods (aliases for convenience)
     def i(self) -> int:
         """Instance method to get int value."""
         return self.int_value()
 
-    def l(self) -> int:
+    def l(self) -> int:  # noqa: E743
         """Instance method to get long value."""
         return self.long_value()
 
@@ -240,123 +229,120 @@ class Number:
         """Instance method to get double value."""
         return self.double_value()
 
-    def abs(self) -> 'Number':
+    def abs(self) -> "Number":
         """Absolute value."""
         return Number(abs(self._value))
 
-    def negate(self) -> 'Number':
+    def negate(self) -> "Number":
         """Negate the number."""
         if self.is_zero():
             return self.abs()
         return Number(-self._value)
 
-    def max(self, number: 'Number') -> 'Number':
+    def max(self, number: "Number") -> "Number":
         """Maximum of this and another number."""
         return Number(max(self._value, number._value))
 
-    def min(self, number: 'Number') -> 'Number':
+    def min(self, number: "Number") -> "Number":
         """Minimum of this and another number."""
         return Number(min(self._value, number._value))
 
-    def add(self, number: 'Number') -> 'Number':
+    def add(self, number: "Number") -> "Number":
         """Add another number."""
         return Number(self._value + number._value)
 
-    def subtract(self, number: 'Number') -> 'Number':
+    def subtract(self, number: "Number") -> "Number":
         """Subtract another number."""
         return Number(self._value - number._value)
 
-    def multiply(self, number: 'Number') -> 'Number':
+    def multiply(self, number: "Number") -> "Number":
         """Multiply by another number."""
         return Number(self._value * number._value)
 
-    def divide(self, number: 'Number') -> 'Number':
+    def divide(self, number: "Number") -> "Number":
         """Divide by another number."""
         if number.is_zero():
             raise ZeroDivisionError("Division by zero")
         return Number(self._value / number._value)
 
-    def remainder(self, number: 'Number') -> 'Number':
+    def remainder(self, number: "Number") -> "Number":
         """Remainder after division."""
         return Number(self._value % number._value)
 
-    def reciprocal(self) -> 'Number':
+    def reciprocal(self) -> "Number":
         """Reciprocal (1/x)."""
         return Number.ONE.divide(self)
 
-    def signum(self) -> 'Number':
+    def signum(self) -> "Number":
         """Sign of the number (-1, 0, or 1)."""
         if self.is_zero():
             return Number.ZERO
         elif self.is_positive():
             return Number.ONE
         else:
-            return Number(Decimal('-1'))
+            return Number(Decimal("-1"))
 
-    def pow(self, exponent: 'Number') -> 'Number':
+    def pow(self, exponent: "Number") -> "Number":
         """Raise to power."""
         # Use float for pow, then convert back
         result = math.pow(float(self._value), float(exponent._value))
         return Number(Decimal(str(result)))
 
-    def nrt(self, number: 'Number') -> 'Number':
+    def nrt(self, number: "Number") -> "Number":
         """Nth root."""
         return self.pow(number.reciprocal())
 
-    def sqrt(self) -> 'Number':
+    def sqrt(self) -> "Number":
         """Square root."""
         return self.nrt(Number.TWO)
 
-    def cbrt(self) -> 'Number':
+    def cbrt(self) -> "Number":
         """Cube root."""
         return self.nrt(Number.THREE)
 
-    def exp(self) -> 'Number':
+    def exp(self) -> "Number":
         """Exponential (e^x)."""
         return Number.E.pow(self)
 
-    def log(self) -> 'Number':
+    def log(self) -> "Number":
         """Natural logarithm."""
         result = math.log(float(self._value))
         return Number(Decimal(str(result)))
 
-    def log10(self) -> 'Number':
+    def log10(self) -> "Number":
         """Base 10 logarithm."""
         return self.log().divide(Number.TEN.log())
 
-    def fractional_part(self) -> 'Number':
+    def fractional_part(self) -> "Number":
         """Fractional part of the number."""
         return self.remainder(Number.ONE)
 
-    def integral_part(self) -> 'Number':
+    def integral_part(self) -> "Number":
         """Integral part of the number."""
         return self.subtract(self.fractional_part())
 
-    def floor(self) -> 'Number':
+    def floor(self) -> "Number":
         """Floor (round down)."""
         integral = self.integral_part()
         if self.is_negative():
             return integral.subtract(Number.ONE)
         return integral
 
-    def ceil(self) -> 'Number':
+    def ceil(self) -> "Number":
         """Ceiling (round up)."""
         integral = self.integral_part()
         if self.is_negative():
             return integral
         return integral.add(Number.ONE)
 
-    def round(self, scale: int = None) -> 'Number':
+    def round(self, scale: int | None = None) -> "Number":
         """Round to specified scale (default SCALE)."""
         if scale is None:
             scale = Number.SCALE
-        rounded = self._value.quantize(
-            Decimal(10) ** -scale,
-            rounding=ROUND_HALF_UP
-        )
+        rounded = self._value.quantize(Decimal(10) ** -scale, rounding=ROUND_HALF_UP)
         return Number(rounded)
 
-    def factorial(self) -> 'Number':
+    def factorial(self) -> "Number":
         """Factorial."""
         if not self.is_natural():
             raise ValueError("Factorial only defined for natural numbers")
@@ -367,28 +353,28 @@ class Number:
             n = n.subtract(Number.ONE)
         return result
 
-    def to_degrees(self) -> 'Number':
+    def to_degrees(self) -> "Number":
         """Convert radians to degrees."""
         k = Number.PI.divide(Number(180.0))
         return self.divide(k)
 
-    def to_radians(self) -> 'Number':
+    def to_radians(self) -> "Number":
         """Convert degrees to radians."""
         k = Number.PI.divide(Number(180.0))
         return self.multiply(k)
 
-    def sin(self) -> 'Number':
+    def sin(self) -> "Number":
         """Sine."""
         result = math.sin(float(self._value))
         return Number(Decimal(str(result)))
 
-    def cos(self) -> 'Number':
+    def cos(self) -> "Number":
         """Cosine."""
         # cos(x) = sin(π/2 - x)
         half_pi = Number.PI.multiply(Number.HALF)
         return half_pi.subtract(self).sin()
 
-    def tan(self) -> 'Number':
+    def tan(self) -> "Number":
         """Tangent."""
         return self.sin().divide(self.cos())
 

@@ -211,3 +211,21 @@ $RECYCLE.BIN/
 # Project-specific
 # Keep data directory structure but ignore runtime-generated files if needed
 # data/*.json  # Uncomment if data files should be ignored
+
+# Pre-commit
+.pre-commit-config.yaml.bak
+
+# Coverage reports (already in main section, but ensuring they're here)
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# EditorConfig
+.editorconfig.bak

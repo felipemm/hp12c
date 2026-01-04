@@ -3,18 +3,20 @@ Main window for HP12C calculator.
 Ported from Java MainWindow.java using Tkinter.
 """
 
+import contextlib
 import tkinter as tk
 import tkinter.font as tkfont
-from pathlib import Path
-from typing import Dict, Optional
-from PIL import Image, ImageTk, ImageFont
 import xml.etree.ElementTree as ET
+from collections.abc import Callable
+from pathlib import Path
 
-from hp12c.calculator.key import Key
+from PIL import Image, ImageFont, ImageTk
+
 from hp12c.calculator.config import Configuration
+from hp12c.calculator.key import Key
+from hp12c.ui.image_button import ImageButton
 from hp12c.ui.image_panel import ImagePanel
 from hp12c.ui.text_field import TextField
-from hp12c.ui.image_button import ImageButton
 
 
 class MainWindow:
@@ -31,9 +33,9 @@ class MainWindow:
         self._base_path = Path("resources")
         self._skin_path = None
         self._skin_font_path = None
-        self._buttons: Dict[str, ImageButton] = {}
-        self._image_map: Dict[str, Image.Image] = {}
-        self._image_map_pressed: Dict[str, Image.Image] = {}
+        self._buttons: dict[str, ImageButton] = {}
+        self._image_map: dict[str, Image.Image] = {}
+        self._image_map_pressed: dict[str, Image.Image] = {}
         self._bg_image = None
         self._font = None  # PIL ImageFont (for image rendering if needed)
         self._tk_font = None  # Tkinter font (for Canvas text items)
@@ -68,7 +70,7 @@ class MainWindow:
         # LCD position on background image (where the actual LCD screen appears)
         # These are the pixel coordinates on the background image
         self._lcd_x = 100  # Left edge of LCD area (centered: (640-300)/2 = 170)
-        self._lcd_y = 20   # Top edge of LCD area
+        self._lcd_y = 20  # Top edge of LCD area
 
         # Colors
         self._face_color = None
@@ -102,7 +104,7 @@ class MainWindow:
         self._frame = tk.Tk()
         self._frame.title(window_title)
         self._frame.resizable(False, False)
-        self._frame.config(bg='#000000')
+        self._frame.config(bg="#000000")
 
         # Set window size to match panel size
         self._frame.geometry(f"{self._wmainpan}x{self._hmainpan}")
@@ -131,7 +133,11 @@ class MainWindow:
                 f"Expected resources at: {self._base_path}"
             )
 
-        skin_name = self._cfg.get_skin() if self._cfg.get_skin() else Configuration.DEFAULT_SKIN
+        skin_name = (
+            self._cfg.get_skin()
+            if self._cfg and self._cfg.get_skin()
+            else Configuration.DEFAULT_SKIN
+        )
         self._skin_path = self._base_path / "skins" / skin_name
         self._skin_font_path = self._skin_path / "font.ttf"
 
@@ -141,7 +147,11 @@ class MainWindow:
 
     def load_skin(self):
         """Load skin configuration."""
-        skin_name = self._cfg.get_skin() if self._cfg.get_skin() else Configuration.DEFAULT_SKIN
+        skin_name = (
+            self._cfg.get_skin()
+            if self._cfg and self._cfg.get_skin()
+            else Configuration.DEFAULT_SKIN
+        )
         skin_file = self._base_path / "skins" / skin_name / "skn.xml"
 
         print(f"Loading skin from: {skin_file}")
@@ -164,20 +174,30 @@ class MainWindow:
 
         # Set default colors if not in skin
         # XML uses hyphenated tag names (e.g., "display-face-color"), not camelCase
-        self._face_color = self._hex_to_color(self._skin.get('face-color', self._skin.get('bgColor', '#000000')))
-        self._display_bg_color = self._hex_to_color(self._skin.get('display-bg-color', self._skin.get('displayBgColor', '#000000')))
-        self._display_face_color = self._hex_to_color(self._skin.get('display-face-color', self._skin.get('displayFaceColor', '#00FF00')))
-        self._button_bg_color = self._hex_to_color(self._skin.get('button-bg-color', self._skin.get('buttonBgColor', '#000000')))
-        self._button_face_color = self._hex_to_color(self._skin.get('button-face-color', self._skin.get('buttonFaceColor', '#FFFFFF')))
+        self._face_color = self._hex_to_color(
+            self._skin.get("face-color", self._skin.get("bgColor", "#000000"))
+        )
+        self._display_bg_color = self._hex_to_color(
+            self._skin.get("display-bg-color", self._skin.get("displayBgColor", "#000000"))
+        )
+        self._display_face_color = self._hex_to_color(
+            self._skin.get("display-face-color", self._skin.get("displayFaceColor", "#00FF00"))
+        )
+        self._button_bg_color = self._hex_to_color(
+            self._skin.get("button-bg-color", self._skin.get("buttonBgColor", "#000000"))
+        )
+        self._button_face_color = self._hex_to_color(
+            self._skin.get("button-face-color", self._skin.get("buttonFaceColor", "#FFFFFF"))
+        )
 
         # Debug: print loaded colors
-        print(f"Loaded skin colors:")
+        print("Loaded skin colors:")
         print(f"  display-face-color: {self._skin.get('display-face-color', 'NOT FOUND')}")
         print(f"  display_face_color: {self._display_face_color}")
 
     def _hex_to_color(self, hex_str: str) -> str:
         """Convert hex color string to tkinter color."""
-        if hex_str.startswith('#'):
+        if hex_str.startswith("#"):
             return hex_str
         return f"#{hex_str}"
 
@@ -211,7 +231,7 @@ class MainWindow:
         self._lcd_x = int(self._lcd_x * size)
         self._lcd_y = int(self._lcd_y * size)
 
-    def create_image_icon(self, w: int, h: int, path: str) -> Optional[Image.Image]:
+    def create_image_icon(self, w: int, h: int, path: str) -> Image.Image | None:
         """Create scaled image icon."""
         try:
             # Try base_path first (should be set correctly in find_paths)
@@ -245,7 +265,9 @@ class MainWindow:
         skin_path_str = f"skins/{skin_name}/"
 
         # Background image
-        bg_img = self.create_image_icon(self._wmainpan, self._hmainpan, f"{skin_path_str}background.png")
+        bg_img = self.create_image_icon(
+            self._wmainpan, self._hmainpan, f"{skin_path_str}background.png"
+        )
         if bg_img:
             self._bg_image = bg_img
             print(f"Background image loaded: {skin_path_str}background.png")
@@ -254,16 +276,45 @@ class MainWindow:
 
         # Button images - normal and pressed
         button_codes = [
-            (0, Key.KEY_0), (1, Key.KEY_1), (2, Key.KEY_2), (3, Key.KEY_3),
-            (4, Key.KEY_4), (5, Key.KEY_5), (6, Key.KEY_6), (7, Key.KEY_7),
-            (8, Key.KEY_8), (9, Key.KEY_9), (10, Key.KEY_DIV), (11, Key.KEY_N),
-            (12, Key.KEY_I), (13, Key.KEY_PV), (14, Key.KEY_PMT), (15, Key.KEY_FV),
-            (16, Key.KEY_CHS), (20, Key.KEY_MUL), (21, Key.KEY_POW), (22, Key.KEY_RECIPROCAL),
-            (23, Key.KEY_PERC_TOT), (24, Key.KEY_PERC_DELTA), (25, Key.KEY_PERC), (26, Key.KEY_EEX),
-            (30, Key.KEY_SUB), (31, Key.KEY_RS), (32, Key.KEY_SST), (33, Key.KEY_ROLL),
-            (34, Key.KEY_XY), (35, Key.KEY_CLX), (36, Key.KEY_ENTER), (40, Key.KEY_SUM),
-            (41, Key.KEY_ON), (42, Key.KEY_F), (43, Key.KEY_G), (44, Key.KEY_STO),
-            (45, Key.KEY_RCL), (48, Key.KEY_DOT), (49, Key.KEY_TOT)
+            (0, Key.KEY_0),
+            (1, Key.KEY_1),
+            (2, Key.KEY_2),
+            (3, Key.KEY_3),
+            (4, Key.KEY_4),
+            (5, Key.KEY_5),
+            (6, Key.KEY_6),
+            (7, Key.KEY_7),
+            (8, Key.KEY_8),
+            (9, Key.KEY_9),
+            (10, Key.KEY_DIV),
+            (11, Key.KEY_N),
+            (12, Key.KEY_I),
+            (13, Key.KEY_PV),
+            (14, Key.KEY_PMT),
+            (15, Key.KEY_FV),
+            (16, Key.KEY_CHS),
+            (20, Key.KEY_MUL),
+            (21, Key.KEY_POW),
+            (22, Key.KEY_RECIPROCAL),
+            (23, Key.KEY_PERC_TOT),
+            (24, Key.KEY_PERC_DELTA),
+            (25, Key.KEY_PERC),
+            (26, Key.KEY_EEX),
+            (30, Key.KEY_SUB),
+            (31, Key.KEY_RS),
+            (32, Key.KEY_SST),
+            (33, Key.KEY_ROLL),
+            (34, Key.KEY_XY),
+            (35, Key.KEY_CLX),
+            (36, Key.KEY_ENTER),
+            (40, Key.KEY_SUM),
+            (41, Key.KEY_ON),
+            (42, Key.KEY_F),
+            (43, Key.KEY_G),
+            (44, Key.KEY_STO),
+            (45, Key.KEY_RCL),
+            (48, Key.KEY_DOT),
+            (49, Key.KEY_TOT),
         ]
 
         loaded_count = 0
@@ -289,7 +340,7 @@ class MainWindow:
     def load_font(self):
         """Load font from skin."""
         try:
-            if self._skin_font_path.exists():
+            if self._skin_font_path and self._skin_font_path.exists():
                 # Load PIL font for image rendering (if needed)
                 self._font = ImageFont.truetype(str(self._skin_font_path), self._font_size)
 
@@ -304,54 +355,52 @@ class MainWindow:
                         self._tk_font = tkfont.Font(family=font_family, size=self._font_size)
                         # Verify the font was actually loaded by checking if it's different from default
                         actual_family = self._tk_font.cget("family")
-                        if actual_family.lower() == font_family.lower() or actual_family != "Courier":
-                            print(f"Loaded skin font by family name: {font_family} (actual: {actual_family})")
+                        if (
+                            actual_family.lower() == font_family.lower()
+                            or actual_family != "Courier"
+                        ):
+                            print(
+                                f"Loaded skin font by family name: {font_family} (actual: {actual_family})"
+                            )
                         else:
-                            print(f"Warning: Font family '{font_family}' not found, using '{actual_family}'")
-                            # Font family not available, try file parameter if supported
-                            try:
-                                self._tk_font = tkfont.Font(file=str(self._skin_font_path), size=self._font_size)
-                                print(f"Loaded skin font from file: {self._skin_font_path}")
-                            except (TypeError, tk.TclError, AttributeError) as e:
-                                print(f"Could not load font from file: {e}, using Courier")
-                                self._tk_font = tkfont.Font(family="Courier", size=self._font_size)
+                            print(
+                                f"Warning: Font family '{font_family}' not found, using '{actual_family}'"
+                            )
+                            # Font family not available, fallback to Courier
+                            # Note: Tkinter Font doesn't support file parameter
+                            print(f"Font family '{font_family}' not available, using Courier")
+                            self._tk_font = tkfont.Font(family="Courier", size=self._font_size)
                     except Exception as e2:
                         print(f"Could not load font family '{font_family}': {e2}")
-                        # Try file parameter as fallback
-                        try:
-                            self._tk_font = tkfont.Font(file=str(self._skin_font_path), size=self._font_size)
-                            print(f"Loaded skin font from file (fallback): {self._skin_font_path}")
-                        except (TypeError, tk.TclError, AttributeError):
-                            print(f"Using Courier as fallback font")
-                            self._tk_font = tkfont.Font(family="Courier", size=self._font_size)
-                else:
-                    # Could not extract family name, try file parameter
-                    try:
-                        self._tk_font = tkfont.Font(file=str(self._skin_font_path), size=self._font_size)
-                        print(f"Loaded skin font from file: {self._skin_font_path}")
-                    except (TypeError, tk.TclError, AttributeError) as e:
-                        print(f"Could not load font from file: {e}, using Courier")
+                        # Fallback to Courier
+                        print("Using Courier as fallback font")
                         self._tk_font = tkfont.Font(family="Courier", size=self._font_size)
+                else:
+                    # Could not extract family name, use Courier
+                    print("Could not extract font family name, using Courier")
+                    self._tk_font = tkfont.Font(family="Courier", size=self._font_size)
             else:
                 # Font file not found, use default
                 print(f"Font file not found: {self._skin_font_path}, using Courier")
-                self._font = ('Courier', self._font_size)
+                self._font = ("Courier", self._font_size)
                 self._tk_font = tkfont.Font(family="Courier", size=self._font_size)
         except Exception as e:
             print(f"Error loading font: {e}")
             import traceback
+
             traceback.print_exc()
-            self._font = ('Courier', self._font_size)
+            self._font = ("Courier", self._font_size)
             self._tk_font = tkfont.Font(family="Courier", size=self._font_size)
 
-    def _get_font_family_from_file(self, font_path: Path) -> Optional[str]:
+    def _get_font_family_from_file(self, font_path: Path) -> str | None:
         """Try to extract font family name from TTF file."""
         try:
             # Method 1: Try using fontTools if available (most reliable)
             try:
                 from fontTools.ttLib import TTFont
+
                 ttf = TTFont(str(font_path))
-                name_table = ttf['name']
+                name_table = ttf["name"]
                 # Look for family name (nameID 1)
                 # Prefer Windows platform (platformID 3) as it's most common
                 family_name = None
@@ -360,22 +409,20 @@ class MainWindow:
                         if record.platformID == 3:  # Windows/Unicode - prefer this
                             if isinstance(record.string, bytes):
                                 try:
-                                    family_name = record.string.decode('utf-16-be')
+                                    family_name = record.string.decode("utf-16-be")
                                     break  # Found preferred platform, use it
-                                except:
+                                except UnicodeDecodeError:
                                     pass
                         elif not family_name:  # Fallback to other platforms if not found yet
                             if isinstance(record.string, bytes):
                                 try:
-                                    family_name = record.string.decode('utf-16-be')
-                                except:
+                                    family_name = record.string.decode("utf-16-be")
+                                except UnicodeDecodeError:
                                     try:
-                                        family_name = record.string.decode('utf-8')
-                                    except:
-                                        try:
-                                            family_name = record.string.decode('latin-1')
-                                        except:
-                                            pass
+                                        family_name = record.string.decode("utf-8")
+                                    except UnicodeDecodeError:
+                                        with contextlib.suppress(UnicodeDecodeError):
+                                            family_name = record.string.decode("latin-1")
                             else:
                                 family_name = str(record.string)
 
@@ -390,57 +437,69 @@ class MainWindow:
 
             # Method 2: Manual TTF parsing (simplified - reads name table)
             try:
-                with open(font_path, 'rb') as f:
+                with open(font_path, "rb") as f:
                     data = f.read()
 
                 # TTF file structure: offset table at start
                 # Read numTables (2 bytes at offset 4)
-                num_tables = int.from_bytes(data[4:6], byteorder='big')
+                num_tables = int.from_bytes(data[4:6], byteorder="big")
 
                 # Find 'name' table
                 name_table_offset = None
                 name_table_length = None
                 for i in range(num_tables):
                     table_offset = 12 + i * 16
-                    tag = data[table_offset:table_offset+4].decode('ascii', errors='ignore')
-                    if tag == 'name':
-                        name_table_offset = int.from_bytes(data[table_offset+8:table_offset+12], byteorder='big')
-                        name_table_length = int.from_bytes(data[table_offset+12:table_offset+16], byteorder='big')
+                    tag = data[table_offset : table_offset + 4].decode("ascii", errors="ignore")
+                    if tag == "name":
+                        name_table_offset = int.from_bytes(
+                            data[table_offset + 8 : table_offset + 12], byteorder="big"
+                        )
+                        name_table_length = int.from_bytes(
+                            data[table_offset + 12 : table_offset + 16], byteorder="big"
+                        )
                         break
 
-                if name_table_offset:
+                if name_table_offset and name_table_length is not None:
                     # Read name table
-                    name_data = data[name_table_offset:name_table_offset+name_table_length]
+                    name_data = data[name_table_offset : name_table_offset + name_table_length]
                     # Format: format (2), count (2), stringOffset (2)
-                    format = int.from_bytes(name_data[0:2], byteorder='big')
-                    count = int.from_bytes(name_data[2:4], byteorder='big')
-                    string_offset = int.from_bytes(name_data[4:6], byteorder='big')
+                    _format = int.from_bytes(name_data[0:2], byteorder="big")
+                    count = int.from_bytes(name_data[2:4], byteorder="big")
+                    string_offset = int.from_bytes(name_data[4:6], byteorder="big")
 
                     # Read name records
                     family_name = None
                     for i in range(count):
                         record_offset = 6 + i * 12
-                        platform_id = int.from_bytes(name_data[record_offset:record_offset+2], byteorder='big')
-                        name_id = int.from_bytes(name_data[record_offset+6:record_offset+8], byteorder='big')
-                        length = int.from_bytes(name_data[record_offset+8:record_offset+10], byteorder='big')
-                        offset = int.from_bytes(name_data[record_offset+10:record_offset+12], byteorder='big')
+                        platform_id = int.from_bytes(
+                            name_data[record_offset : record_offset + 2], byteorder="big"
+                        )
+                        name_id = int.from_bytes(
+                            name_data[record_offset + 6 : record_offset + 8], byteorder="big"
+                        )
+                        length = int.from_bytes(
+                            name_data[record_offset + 8 : record_offset + 10], byteorder="big"
+                        )
+                        offset = int.from_bytes(
+                            name_data[record_offset + 10 : record_offset + 12], byteorder="big"
+                        )
 
                         if name_id == 1:  # Family name
-                            string_data = name_data[string_offset + offset:string_offset + offset + length]
+                            string_data = name_data[
+                                string_offset + offset : string_offset + offset + length
+                            ]
                             if platform_id == 3:  # Windows/Unicode
                                 try:
-                                    family_name = string_data.decode('utf-16-be')
+                                    family_name = string_data.decode("utf-16-be")
                                     break
-                                except:
+                                except UnicodeDecodeError:
                                     pass
                             elif not family_name:  # Fallback
                                 try:
-                                    family_name = string_data.decode('utf-16-be')
-                                except:
-                                    try:
-                                        family_name = string_data.decode('latin-1')
-                                    except:
-                                        pass
+                                    family_name = string_data.decode("utf-16-be")
+                                except UnicodeDecodeError:
+                                    with contextlib.suppress(UnicodeDecodeError):
+                                        family_name = string_data.decode("latin-1")
 
                     if family_name:
                         print(f"Extracted font family name (manual parse): '{family_name}'")
@@ -448,6 +507,7 @@ class MainWindow:
             except Exception as e:
                 print(f"Error manually parsing TTF file: {e}")
                 import traceback
+
                 traceback.print_exc()
 
             print("Could not extract font family name from TTF file")
@@ -455,6 +515,7 @@ class MainWindow:
         except Exception as e:
             print(f"Error extracting font family: {e}")
             import traceback
+
             traceback.print_exc()
             return None
 
@@ -469,7 +530,7 @@ class MainWindow:
             self._main_panel = ImagePanel(self._frame, image=self._bg_image)
         else:
             self._main_panel = ImagePanel(self._frame)
-            self._main_panel.config(bg='#000000')
+            self._main_panel.config(bg="#000000")
 
         self._main_panel.pack(fill=tk.BOTH, expand=True)
         self._main_panel.config(width=self._wmainpan, height=self._hmainpan)
@@ -498,7 +559,9 @@ class MainWindow:
         # Debug: print color and position info
         print(f"Display color: {self._display_face_color}")
         print(f"LCD position on image: x={self._lcd_x}, y={self._lcd_y}")
-        print(f"Display text position: x={display_x}, y={display_y}, wdis={self._wdis}, rdis={self._rdis}")
+        print(
+            f"Display text position: x={display_x}, y={display_y}, wdis={self._wdis}, rdis={self._rdis}"
+        )
 
         # Create text items on the Canvas for transparent display
         if isinstance(self._main_panel, tk.Canvas):
@@ -511,11 +574,11 @@ class MainWindow:
                     font_family = display_font.cget("family")
                     font_size = display_font.cget("size")
                     print(f"Using font for display: family={font_family}, size={font_size}")
-                except:
-                    print(f"Warning: Could not get font properties")
+                except (tk.TclError, AttributeError):
+                    print("Warning: Could not get font properties")
             else:
                 display_font = tkfont.Font(family="Courier", size=self._font_size)
-                print(f"Using default Courier font (tk_font not set)")
+                print("Using default Courier font (tk_font not set)")
 
             # Create text with font - Tkinter Canvas text rendering
             # Note: Tkinter's Canvas text rendering may differ from Java's Graphics2D
@@ -523,22 +586,25 @@ class MainWindow:
             # The font family name approach works, but rendering may look different
             # due to different rendering engines and system font rendering settings
             self._display_text_id = self._main_panel.create_text(
-                display_x, display_y,
-                anchor=tk.E,  # East anchor for right alignment, centered vertically
+                display_x,
+                display_y,
                 text="",
+                anchor=tk.E,  # East anchor for right alignment, centered vertically
                 fill=self._display_face_color,
-                font=display_font
+                font=display_font,
             )
 
             # Verify the font was applied
             try:
                 applied_font = self._main_panel.itemcget(self._display_text_id, "font")
                 print(f"Applied font to display text: {applied_font}")
-            except:
+            except (tk.TclError, AttributeError):
                 pass
 
             # Flag display text - right-aligned, positioned below main display
-            flag_y = self._lcd_y + self._hdis + self._bfdis + self._hfdis // 2  # Below main display, vertically centered
+            flag_y = (
+                self._lcd_y + self._hdis + self._bfdis + self._hfdis // 2
+            )  # Below main display, vertically centered
             flag_x = self._lcd_x + self._wfdis - self._rfdis  # Right edge minus right padding
             flag_font_size = max(8, self._font_size // 3)
             # Use skin font for flag display if available, otherwise Courier
@@ -547,57 +613,59 @@ class MainWindow:
                     # Create a smaller version of the skin font using the same family
                     font_family = self._tk_font.cget("family")
                     flag_font = tkfont.Font(family=font_family, size=flag_font_size)
-                except:
-                    # Fallback: try to load from file or use Courier
-                    try:
-                        if self._skin_font_path and self._skin_font_path.exists():
-                            flag_font = tkfont.Font(file=str(self._skin_font_path), size=flag_font_size)
-                        else:
-                            flag_font = tkfont.Font(family="Courier", size=flag_font_size)
-                    except:
-                        flag_font = tkfont.Font(family="Courier", size=flag_font_size)
+                except (tk.TclError, AttributeError):
+                    # Fallback: use Courier (Tkinter Font doesn't support file parameter)
+                    flag_font = tkfont.Font(family="Courier", size=flag_font_size)
             else:
                 flag_font = tkfont.Font(family="Courier", size=flag_font_size)
             self._flag_text_id = self._main_panel.create_text(
-                flag_x, flag_y,
-                anchor=tk.E,  # East anchor for right alignment
+                flag_x,
+                flag_y,
                 text="",
+                anchor=tk.E,  # East anchor for right alignment
                 fill=self._display_face_color,
-                font=flag_font
+                font=flag_font,
             )
 
             # Don't create Entry widgets when using Canvas text items
             # Entry widgets can't be children of Canvas, so we skip them
             self._display = None
             self._flag_display = None
-        else:
+        # Note: main_panel is always ImagePanel which is a Canvas, so else branch is unreachable
+        # but kept for type safety and potential future changes
+        else:  # pragma: no cover
             # Fallback: use Entry widgets if main_panel is not a Canvas
             self._display_panel = tk.Frame(self._main_panel)
             self._display_panel.place(x=0, y=0, width=self._wmainpan, height=self._hdispan)
 
             display_chars = max(10, self._wdis // 8)
             self._display = TextField(self._display_panel, font=self._font)
-            self._display.config(fg=self._display_face_color,
-                                bg=self._display_bg_color,
-                                highlightthickness=0,
-                                borderwidth=0,
-                                insertbackground=self._display_face_color,
-                                state='readonly',
-                                width=display_chars,
-                                relief=tk.FLAT)
+            self._display.config(
+                fg=self._display_face_color,
+                bg=self._display_bg_color,
+                highlightthickness=0,
+                borderwidth=0,
+                insertbackground=self._display_face_color,
+                state="readonly",
+                width=display_chars,
+                relief=tk.FLAT,
+            )
             self._display.place(x=0, y=0, width=self._wdis, height=self._hdis)
 
             flag_chars = max(10, self._wfdis // 8)
-            self._flag_display = TextField(self._display_panel,
-                                          font=('Courier', max(8, self._font_size // 3)))
-            self._flag_display.config(fg=self._display_face_color,
-                                     bg=self._display_bg_color,
-                                     highlightthickness=0,
-                                     borderwidth=0,
-                                     insertbackground=self._display_face_color,
-                                     state='readonly',
-                                     width=flag_chars,
-                                     relief=tk.FLAT)
+            self._flag_display = TextField(
+                self._display_panel, font=("Courier", max(8, self._font_size // 3))
+            )
+            self._flag_display.config(
+                fg=self._display_face_color,
+                bg=self._display_bg_color,
+                highlightthickness=0,
+                borderwidth=0,
+                insertbackground=self._display_face_color,
+                state="readonly",
+                width=flag_chars,
+                relief=tk.FLAT,
+            )
             self._flag_display.place(x=0, y=self._hdis, width=self._wfdis, height=self._hfdis)
 
         # Build buttons with exact layout from Java
@@ -608,29 +676,52 @@ class MainWindow:
         # Button layout: (gridx, gridy, key, rowspan)
         button_layout = [
             # Row 1 (gridy=1)
-            (0, 1, Key.KEY_N, 1), (1, 1, Key.KEY_I, 1), (2, 1, Key.KEY_PV, 1),
-            (3, 1, Key.KEY_PMT, 1), (4, 1, Key.KEY_FV, 1), (5, 1, Key.KEY_CHS, 1),
-            (6, 1, Key.KEY_7, 1), (7, 1, Key.KEY_8, 1), (8, 1, Key.KEY_9, 1),
+            (0, 1, Key.KEY_N, 1),
+            (1, 1, Key.KEY_I, 1),
+            (2, 1, Key.KEY_PV, 1),
+            (3, 1, Key.KEY_PMT, 1),
+            (4, 1, Key.KEY_FV, 1),
+            (5, 1, Key.KEY_CHS, 1),
+            (6, 1, Key.KEY_7, 1),
+            (7, 1, Key.KEY_8, 1),
+            (8, 1, Key.KEY_9, 1),
             (9, 1, Key.KEY_DIV, 1),
             # Row 2 (gridy=2)
-            (0, 2, Key.KEY_POW, 1), (1, 2, Key.KEY_RECIPROCAL, 1), (2, 2, Key.KEY_PERC_TOT, 1),
-            (3, 2, Key.KEY_PERC_DELTA, 1), (4, 2, Key.KEY_PERC, 1), (5, 2, Key.KEY_EEX, 1),
-            (6, 2, Key.KEY_4, 1), (7, 2, Key.KEY_5, 1), (8, 2, Key.KEY_6, 1),
+            (0, 2, Key.KEY_POW, 1),
+            (1, 2, Key.KEY_RECIPROCAL, 1),
+            (2, 2, Key.KEY_PERC_TOT, 1),
+            (3, 2, Key.KEY_PERC_DELTA, 1),
+            (4, 2, Key.KEY_PERC, 1),
+            (5, 2, Key.KEY_EEX, 1),
+            (6, 2, Key.KEY_4, 1),
+            (7, 2, Key.KEY_5, 1),
+            (8, 2, Key.KEY_6, 1),
             (9, 2, Key.KEY_MUL, 1),
             # Row 3 (gridy=3)
-            (0, 3, Key.KEY_RS, 1), (1, 3, Key.KEY_SST, 1), (2, 3, Key.KEY_ROLL, 1),
-            (3, 3, Key.KEY_XY, 1), (4, 3, Key.KEY_CLX, 1), (5, 3, Key.KEY_ENTER, 2),  # ENTER spans 2 rows
-            (6, 3, Key.KEY_1, 1), (7, 3, Key.KEY_2, 1), (8, 3, Key.KEY_3, 1),
+            (0, 3, Key.KEY_RS, 1),
+            (1, 3, Key.KEY_SST, 1),
+            (2, 3, Key.KEY_ROLL, 1),
+            (3, 3, Key.KEY_XY, 1),
+            (4, 3, Key.KEY_CLX, 1),
+            (5, 3, Key.KEY_ENTER, 2),  # ENTER spans 2 rows
+            (6, 3, Key.KEY_1, 1),
+            (7, 3, Key.KEY_2, 1),
+            (8, 3, Key.KEY_3, 1),
             (9, 3, Key.KEY_SUB, 1),
             # Row 4 (gridy=4)
-            (0, 4, Key.KEY_ON, 1), (1, 4, Key.KEY_F, 1), (2, 4, Key.KEY_G, 1),
-            (3, 4, Key.KEY_STO, 1), (4, 4, Key.KEY_RCL, 1),
+            (0, 4, Key.KEY_ON, 1),
+            (1, 4, Key.KEY_F, 1),
+            (2, 4, Key.KEY_G, 1),
+            (3, 4, Key.KEY_STO, 1),
+            (4, 4, Key.KEY_RCL, 1),
             # ENTER button continues from row 3 (no button at 5,4)
-            (6, 4, Key.KEY_0, 1), (7, 4, Key.KEY_DOT, 1), (8, 4, Key.KEY_TOT, 1),
+            (6, 4, Key.KEY_0, 1),
+            (7, 4, Key.KEY_DOT, 1),
+            (8, 4, Key.KEY_TOT, 1),
             (9, 4, Key.KEY_SUM, 1),
         ]
 
-        for gridx, gridy, key, rowspan in button_layout:
+        for gridx, gridy, key, _rowspan in button_layout:
             if key == Key.KEY_NULL:
                 continue
 
@@ -645,21 +736,39 @@ class MainWindow:
                 btn_height = self._hbot
 
             # Create button
+            btn: ImageButton | tk.Button
             if key_name in self._image_map:
                 img = self._image_map[key_name]
                 # Create button with image (ImageButton will create PhotoImage internally)
                 btn = ImageButton(self._main_panel, image=img, key=key)
-                btn.config(borderwidth=0, highlightthickness=0, relief=tk.FLAT,
-                          bg=self._button_bg_color, activebackground=self._button_bg_color,
-                          compound=tk.CENTER)
+                # Ensure bg colors are strings
+                bg_color = str(self._button_bg_color) if self._button_bg_color else "#000000"
+                btn.config(
+                    borderwidth=0,
+                    highlightthickness=0,
+                    relief=tk.FLAT,
+                    bg=bg_color,
+                    activebackground=bg_color,
+                    compound=tk.CENTER,
+                )
             else:
                 # Fallback: create text button if image not available
                 btn_text = self._get_button_text(key)
-                btn = tk.Button(self._main_panel, text=btn_text)
-                btn.config(borderwidth=1, highlightthickness=1, relief=tk.RAISED,
-                          bg=self._button_bg_color, fg=self._button_face_color,
-                          font=('Arial', max(8, self._font_size // 4)))
-                btn._key = key
+                # Ensure bg and fg are strings (not None)
+                bg_color = str(self._button_bg_color) if self._button_bg_color else "#000000"
+                fg_color = str(self._button_face_color) if self._button_face_color else "#FFFFFF"
+                text_btn = tk.Button(
+                    self._main_panel,
+                    text=btn_text,
+                    borderwidth=1,
+                    highlightthickness=1,
+                    relief=tk.RAISED,
+                    bg=bg_color,
+                    fg=fg_color,
+                    font=("Arial", max(8, self._font_size // 4)),
+                )
+                text_btn._key = key
+                btn = text_btn
 
             # Calculate position using place (since main_panel is a Canvas)
             # Button positions: each button is wbot x hbot, with xpad/ypad padding
@@ -671,35 +780,75 @@ class MainWindow:
             btn.place(x=x, y=y, width=btn_width, height=btn_height)
 
             # Bind click handler
-            btn.config(command=lambda k=key: self._on_button_click(k))
+            def make_handler(k: Key) -> Callable[[], None]:
+                return lambda: self._on_button_click(k)
+
+            btn.config(command=make_handler(key))
 
             # Store button
-            self._buttons[key_name] = btn
+            # Type narrowing: btn can be ImageButton or tk.Button, but we store as ImageButton
+            # This is safe because ImageButton is a subclass of tk.Button
+            if isinstance(btn, ImageButton):
+                self._buttons[key_name] = btn
+            else:
+                # For text buttons, we still need to store them but they're not ImageButton
+                # Store as ImageButton type for consistency, but this is a workaround
+                self._buttons[key_name] = btn
 
     def _get_button_text(self, key: Key) -> str:
         """Get text label for button (fallback when image not available)."""
         text_map = {
-            Key.KEY_0: '0', Key.KEY_1: '1', Key.KEY_2: '2', Key.KEY_3: '3',
-            Key.KEY_4: '4', Key.KEY_5: '5', Key.KEY_6: '6', Key.KEY_7: '7',
-            Key.KEY_8: '8', Key.KEY_9: '9', Key.KEY_DIV: '/', Key.KEY_MUL: '*',
-            Key.KEY_SUB: '-', Key.KEY_SUM: '+', Key.KEY_N: 'N', Key.KEY_I: 'I',
-            Key.KEY_PV: 'PV', Key.KEY_PMT: 'PMT', Key.KEY_FV: 'FV', Key.KEY_CHS: 'CHS',
-            Key.KEY_POW: 'y^x', Key.KEY_RECIPROCAL: '1/x', Key.KEY_PERC_TOT: '%T',
-            Key.KEY_PERC_DELTA: 'Δ%', Key.KEY_PERC: '%', Key.KEY_EEX: 'EEX',
-            Key.KEY_RS: 'R/S', Key.KEY_SST: 'SST', Key.KEY_ROLL: 'R↓',
-            Key.KEY_XY: 'x↔y', Key.KEY_CLX: 'CLX', Key.KEY_ENTER: 'ENTER',
-            Key.KEY_ON: 'ON', Key.KEY_F: 'f', Key.KEY_G: 'g',
-            Key.KEY_STO: 'STO', Key.KEY_RCL: 'RCL', Key.KEY_DOT: '.', Key.KEY_TOT: 'Σ+'
+            Key.KEY_0: "0",
+            Key.KEY_1: "1",
+            Key.KEY_2: "2",
+            Key.KEY_3: "3",
+            Key.KEY_4: "4",
+            Key.KEY_5: "5",
+            Key.KEY_6: "6",
+            Key.KEY_7: "7",
+            Key.KEY_8: "8",
+            Key.KEY_9: "9",
+            Key.KEY_DIV: "/",
+            Key.KEY_MUL: "*",
+            Key.KEY_SUB: "-",
+            Key.KEY_SUM: "+",
+            Key.KEY_N: "N",
+            Key.KEY_I: "I",
+            Key.KEY_PV: "PV",
+            Key.KEY_PMT: "PMT",
+            Key.KEY_FV: "FV",
+            Key.KEY_CHS: "CHS",
+            Key.KEY_POW: "y^x",
+            Key.KEY_RECIPROCAL: "1/x",
+            Key.KEY_PERC_TOT: "%T",
+            Key.KEY_PERC_DELTA: "Δ%",
+            Key.KEY_PERC: "%",
+            Key.KEY_EEX: "EEX",
+            Key.KEY_RS: "R/S",
+            Key.KEY_SST: "SST",
+            Key.KEY_ROLL: "R↓",
+            Key.KEY_XY: "x↔y",
+            Key.KEY_CLX: "CLX",
+            Key.KEY_ENTER: "ENTER",
+            Key.KEY_ON: "ON",
+            Key.KEY_F: "f",
+            Key.KEY_G: "g",
+            Key.KEY_STO: "STO",
+            Key.KEY_RCL: "RCL",
+            Key.KEY_DOT: ".",
+            Key.KEY_TOT: "Σ+",
         }
-        return text_map.get(key, key.name.replace('KEY_', ''))
+        return text_map.get(key, key.name.replace("KEY_", ""))
 
     def _on_button_click(self, key: Key):
         """Handle button click."""
-        if self._controller:
+        if self._controller and self._frame:
             # Show pressed state first
             self._controller.key_pressed(key)
             # Then release after a short delay to show the visual effect
-            self._frame.after(50, lambda: self._controller.key_released(key))
+            self._frame.after(
+                50, lambda: self._controller.key_released(key) if self._controller else None
+            )
 
     def _on_closing(self):
         """Handle window closing."""
@@ -725,17 +874,17 @@ class MainWindow:
                 else:
                     # Fallback: update Entry widgets
                     if self._display:
-                        self._display.config(state='normal')
+                        self._display.config(state="normal")
                         self._display.delete(0, tk.END)
                         self._display.insert(0, display_str)
-                        self._display.config(state='readonly')
+                        self._display.config(state="readonly")
 
                     if self._flag_display:
                         flag_str = executor.get_flags().get_display_str()
-                        self._flag_display.config(state='normal')
+                        self._flag_display.config(state="normal")
                         self._flag_display.delete(0, tk.END)
                         self._flag_display.insert(0, flag_str)
-                        self._flag_display.config(state='readonly')
+                        self._flag_display.config(state="readonly")
 
     def show(self):
         """Show window."""
@@ -767,7 +916,8 @@ class MainWindow:
                 pressed_img = self._image_map_pressed[key_name]
                 pressed_photo = ImageTk.PhotoImage(pressed_img)
                 btn.config(image=pressed_photo)
-                btn.image = pressed_photo  # Keep reference
+                if isinstance(btn, ImageButton):
+                    btn._photo = pressed_photo  # Keep reference in ImageButton
 
     def key_released(self, key: Key):
         """Handle key release."""
@@ -778,7 +928,8 @@ class MainWindow:
                 normal_img = self._image_map[key_name]
                 normal_photo = ImageTk.PhotoImage(normal_img)
                 btn.config(image=normal_photo)
-                btn.image = normal_photo  # Keep reference
+                if isinstance(btn, ImageButton):
+                    btn._photo = normal_photo  # Keep reference in ImageButton
             self.update_display()
 
     def get_frame(self):
@@ -788,9 +939,11 @@ class MainWindow:
     def set_icon(self):
         """Set window icon."""
         try:
+            if self._skin_path is None:
+                return
             icon_path = self._skin_path / "icon.png"
             if icon_path.exists():
-                icon_img = Image.open(icon_path)
+                _icon_img = Image.open(icon_path)
                 # Tkinter doesn't directly support setting icon from PIL Image
                 # This would need platform-specific handling
                 pass

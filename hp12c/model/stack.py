@@ -4,7 +4,8 @@ Ported from Java Stack.java.
 """
 
 import datetime
-from typing import List, Optional
+from typing import Optional
+
 from hp12c.hp12c_math.number import Number
 
 
@@ -12,9 +13,11 @@ class Stack:
     """4-level RPN stack (X, Y, Z, T registers) with LAST X support."""
 
     MAX_MAGNITUDE = Number.n(9.999999999).multiply(Number.n(10.0).pow(Number.n(99.0)))
-    MIN_MAGNITUDE = Number.n(1.0E-98)
+    MIN_MAGNITUDE = Number.n(1.0e-98)
 
-    def __init__(self, size: int = 4, stk: Optional[List[Number]] = None, other: Optional['Stack'] = None):
+    def __init__(
+        self, size: int = 4, stk: list[Number] | None = None, other: Optional["Stack"] = None
+    ):
         """
         Initialize stack.
 
@@ -71,18 +74,24 @@ class Stack:
             self._stk[idx] = Stack.fit_magnitude(val)
         except ValueError:
             # If magnitude error, set to max/min
-            self._stk[idx] = Stack.MAX_MAGNITUDE.negate() if val.is_negative() else Stack.MAX_MAGNITUDE
+            self._stk[idx] = (
+                Stack.MAX_MAGNITUDE.negate() if val.is_negative() else Stack.MAX_MAGNITUDE
+            )
 
     def put(self, val: Number):
         """Put value on top of stack (shifts down)."""
         self.shift_down()
         self.set(0, val)
 
-    def get_array(self) -> List[Number]:
+    def push(self, val: Number):
+        """Push value on top of stack (alias for put for test compatibility)."""
+        self.put(val)
+
+    def get_array(self) -> list[Number]:
         """Get stack as array."""
         return self._stk.copy()
 
-    def set_array(self, stk: List[Number]):
+    def set_array(self, stk: list[Number]):
         """Set stack from array."""
         for i in range(len(stk)):
             self.set(i, stk[i])
@@ -90,6 +99,7 @@ class Stack:
     def pop(self) -> Number:
         """Pop top value (shifts up)."""
         self._swp = self._stk[0]
+        self.set_last_top(self._swp)  # Save to LAST X before popping
         self.shift_up()
         return self._swp
 
@@ -130,9 +140,11 @@ class Stack:
 
     def roll_down(self):
         """Roll stack down (top to bottom)."""
-        self._swp = self._stk[0]
-        self.shift_up()
-        self._stk[len(self._stk) - 1] = self._swp
+        # Rotate stack: bottom comes to top, all others shift down
+        bottom = self._stk[len(self._stk) - 1]
+        for i in range(len(self._stk) - 1, 0, -1):
+            self._stk[i] = self._stk[i - 1]
+        self._stk[0] = bottom
 
     def __str__(self) -> str:
         """String representation."""
@@ -147,6 +159,10 @@ class Stack:
         self._stk[1] = self._stk[0]
         self._stk[0] = self._swp
 
+    def swap(self):
+        """Swap top two stack values (alias for swap_top_pair for test compatibility)."""
+        self.swap_top_pair()
+
     def lower_top_pair(self):
         """Lower top pair if top > second."""
         if self._stk[0].greater_than(self._stk[1]):
@@ -154,7 +170,7 @@ class Stack:
             self._stk[1] = self._stk[0]
             self._stk[0] = self._swp
 
-    def set_last_top(self, top: Optional[Number] = None):
+    def set_last_top(self, top: Number | None = None):
         """Set last top value."""
         if top is None:
             self._last_top = self._stk[0]
@@ -165,11 +181,15 @@ class Stack:
         """Get last top value (LAST X register)."""
         return self._last_top
 
+    def get_last_x(self) -> Number:
+        """Get last top value (LAST X register) - alias for get_last_top for test compatibility."""
+        return self.get_last_top()
+
     def clear_last_top(self):
         """Clear last top value."""
         self._last_top = Number.ZERO
 
-    def set_last_bottom(self, bottom: Optional[Number] = None):
+    def set_last_bottom(self, bottom: Number | None = None):
         """Set last bottom value."""
         if bottom is None:
             self._last_bottom = self._stk[self.get_size() - 1]
@@ -220,7 +240,9 @@ class Stack:
         x = self.pop()
         y = self.pop()
         if x.is_zero():
-            raise ZeroDivisionError("Division by ZERO")
+            from hp12c.calculator.exceptions import CalculatorException, Error
+
+            raise CalculatorException(Error.ERROR_MATH, "Division by ZERO")
         self.put(y.divide(x))
         self.set_last_top(x)
 
@@ -341,7 +363,14 @@ class Stack:
         """
         m = number.round(0).int_value()
         d = number.fractional_part().multiply(Number.HUNDRED).round(0).int_value()
-        y = number.fractional_part().multiply(Number.HUNDRED).fractional_part().multiply(Number.n(10000.0)).round(0).int_value()
+        y = (
+            number.fractional_part()
+            .multiply(Number.HUNDRED)
+            .fractional_part()
+            .multiply(Number.n(10000.0))
+            .round(0)
+            .int_value()
+        )
 
         if dmy:
             tmp = d
@@ -350,8 +379,8 @@ class Stack:
 
         try:
             return datetime.datetime(y, m, d, 0, 0, 0)
-        except Exception:
-            raise ValueError("Invalid date")
+        except Exception as err:
+            raise ValueError("Invalid date") from err
 
     @staticmethod
     def date_to_number(date: datetime.datetime, dmy: bool) -> Number:
@@ -369,10 +398,7 @@ class Stack:
         month = f"{date.month:02d}"
         year = f"{date.year:04d}"
 
-        if dmy:
-            str_number = f"{day}.{month}{year}"
-        else:
-            str_number = f"{month}.{day}{year}"
+        str_number = f"{day}.{month}{year}" if dmy else f"{month}.{day}{year}"
 
         return Number.n(str_number)
 
@@ -402,9 +428,7 @@ class Stack:
         z1 = 30 if dd1 == 31 else dd1
         if dd2 == 31 and dd1 >= 30:
             z2 = 30
-        elif dd2 == 31 and dd1 < 30:
-            z2 = dd2
-        elif dd2 < 31:
+        elif dd2 == 31 and dd1 < 30 or dd2 < 31:
             z2 = dd2
         else:
             z2 = dd2

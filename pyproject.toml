@@ -1,10 +1,79 @@
 [project]
 name = "hp12c"
 version = "0.1.0"
-description = "Add your description here"
+description = "HP12C Financial Calculator Emulator - A complete Python port with RPN stack, financial calculations, and dual UI framework support"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.10"
+license = {text = "GPL-3.0-or-later"}
+authors = [
+    {name = "HP12C Calculator Contributors"}
+]
+keywords = ["calculator", "hp12c", "financial", "rpn", "emulator"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
 dependencies = [
     "pillow>=10.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-username/hp12c"
+Documentation = "https://github.com/your-username/hp12c#readme"
+Repository = "https://github.com/your-username/hp12c"
+Issues = "https://github.com/your-username/hp12c/issues"
+[project.optional-dependencies]
+pyqt5 = [
     "pyqt5>=5.15.0",
 ]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+    "types-pillow>=10.0.0",
+    "pre-commit>=3.0.0",
+    "platformdirs>=3.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+]
+
+[tool.coverage.run]
+source = ["hp12c"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+fail_under = 80
+
+[tool.ruff]
+# Ruff configuration is in ruff.toml

@@ -3,13 +3,14 @@ PyQt5 image button widget for HP12C calculator.
 Equivalent to Tkinter ImageButton but using PyQt5.
 """
 
-from PyQt5.QtWidgets import QPushButton
-from PyQt5.QtGui import QPixmap, QIcon
-from PyQt5.QtCore import Qt, pyqtSignal
-from PIL import Image
-from typing import Optional
-from hp12c.calculator.key import Key
 import io
+
+from PIL import Image
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtWidgets import QPushButton
+
+from hp12c.calculator.key import Key
 
 
 class PyQt5ImageButton(QPushButton):
@@ -18,17 +19,22 @@ class PyQt5ImageButton(QPushButton):
     # Signal emitted when button is clicked
     clicked_with_key = pyqtSignal(object)  # Emits Key object
 
-    def __init__(self, parent=None, image_path: Optional[str] = None,
-                 image: Optional[Image.Image] = None, key: Optional[Key] = None):
+    def __init__(
+        self,
+        parent=None,
+        image_path: str | None = None,
+        image: Image.Image | None = None,
+        key: Key | None = None,
+    ):
         """Initialize image button."""
         super().__init__(parent)
-        self._image = None
-        self._pixmap = None
-        self._key = key
+        self._image: Image.Image | None = None
+        self._pixmap: QPixmap | None = None
+        self._key: Key | None = key
 
         # Set button properties
         self.setFlat(True)  # No border
-        self.setFocusPolicy(Qt.NoFocus)  # Don't take keyboard focus
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)  # Don't take keyboard focus
 
         if image_path:
             self.set_image(image_path)
@@ -61,7 +67,7 @@ class PyQt5ImageButton(QPushButton):
 
                 # Convert PIL Image to bytes
                 img_bytes = io.BytesIO()
-                self._image.save(img_bytes, format='PNG')
+                self._image.save(img_bytes, format="PNG")
                 img_bytes.seek(0)
 
                 # Create QImage from bytes
@@ -83,7 +89,7 @@ class PyQt5ImageButton(QPushButton):
         """Set associated key."""
         self._key = key
 
-    def get_key(self) -> Optional[Key]:
+    def get_key(self) -> Key | None:
         """Get associated key."""
         return self._key
 
@@ -97,8 +103,5 @@ class PyQt5ImageButton(QPushButton):
         super().resizeEvent(event)
         if self._image:
             # Resize image to button size
-            resized = self._image.resize(
-                (self.width(), self.height()),
-                Image.Resampling.LANCZOS
-            )
+            resized = self._image.resize((self.width(), self.height()), Image.Resampling.LANCZOS)
             self.set_image_obj(resized)

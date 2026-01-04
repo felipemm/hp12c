@@ -3,19 +3,28 @@ Calculator flags for HP12C.
 Ported from Java Flags.java.
 """
 
-from typing import List, Tuple
-
 
 class Flags:
     """Manages calculator state flags."""
 
     DEFAULT = [
-        ["f", "0"], ["g", "0"], ["sto", "0"], ["rcl", "0"], ["gto", "0"],
-        ["dmy", "0"], ["beg", "0"], ["c", "0"], ["on", "0"], ["brc", "0"],
-        ["alg", "0"], ["prgm", "0"], ["run", "0"], ["wild", "0"]
+        ["f", "0"],
+        ["g", "0"],
+        ["sto", "0"],
+        ["rcl", "0"],
+        ["gto", "0"],
+        ["dmy", "0"],
+        ["beg", "0"],
+        ["c", "0"],
+        ["on", "0"],
+        ["brc", "0"],
+        ["alg", "0"],
+        ["prgm", "0"],
+        ["run", "0"],
+        ["wild", "0"],
     ]
 
-    def __init__(self, size: int = 14, flg: List[List[str]] = None):
+    def __init__(self, size: int = 14, flg: list[list[str]] | None = None):
         """Initialize flags."""
         if flg is not None:
             self._flg = flg
