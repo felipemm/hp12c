@@ -382,6 +382,7 @@ class Display:
     def set_ready(self):
         """Set display to ready state."""
         self._mode = 0
+        self._status = Display.STATUS_READY
         self._dot = False
         self._neg = False
         self._full = False

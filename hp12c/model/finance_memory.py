@@ -229,7 +229,7 @@ class FinanceMemory:
         n = 0.0
         tmp = [0.0] * 3
         d = i / 100.0 / (1.0 + i * (beg / 100.0))
-        if pmt == fv * i:
+        if pmt == fv * i / 100.0:
             raise CalculatorException(Error.ERROR_CI, "Compound Interest Error: pmt == fv * i")
         if i <= -100.0:
             raise CalculatorException(Error.ERROR_CI, "Compound Interest Error: i <= -100")
@@ -245,6 +245,11 @@ class FinanceMemory:
         tmp[0] = pmt - (i := i / 100.0) * fv + i * pmt * beg
         tmp[1] = pmt + i * pv + i * pmt * beg
         tmp[2] = math.log(i + 1.0)
+        if tmp[0] == 0.0 or tmp[1] == 0.0 or tmp[0] / tmp[1] <= 0.0:
+            raise CalculatorException(
+                Error.ERROR_CI,
+                "Compound Interest Error: invalid period calculation (log domain error)",
+            )
         n = math.log(tmp[0] / tmp[1]) / tmp[2]
         n = math.floor(n) if FinanceMemory._frac_part(n) < 0.005 else math.ceil(n)
         return n
