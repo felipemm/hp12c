@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.2] - 2026-01-04
 
+### Changed
+- Aligned mypy version between pre-commit hooks and uv dependencies (v1.19.1)
+- Updated pre-commit hook versions: ruff to v0.14.10, pre-commit-hooks to v6.0.0
+- Pre-commit mypy hook now uses mypy.ini configuration instead of command-line overrides
+
+### Fixed
+- Fixed mypy configuration inconsistency between pre-commit and Makefile
+- Fixed type ignore comment in `PyQt5MainWindow` class (changed from `[misc]` to `[metaclass]`)
+
 ## [0.1.1] - 2026-01-04
 
 ### Added
