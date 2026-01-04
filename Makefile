@@ -1,4 +1,4 @@
-.PHONY: help build build-macos build-windows build-linux clean regenerate-spec install distclean run install-deps
+.PHONY: help build build-macos build-windows build-linux clean regenerate-spec install distclean janitor run install-deps
 
 # Application name
 APP_NAME = hp12c
@@ -74,6 +74,7 @@ help:
 	@echo "  make build-windows - Build Windows .exe"
 	@echo "  make build-linux  - Build Linux executable"
 	@echo "  make clean        - Remove build artifacts"
+	@echo "  make janitor      - Clean everything except final dist files"
 	@echo "  make regenerate-spec - Regenerate spec file with latest dependencies"
 	@echo "  make distclean    - Remove all build and dist files"
 	@echo "  make install-deps - Install build dependencies"
@@ -214,6 +215,41 @@ clean:
 	rm -rf $(BUILD_DIR)
 	rm -f $(SPEC_FILE)
 	@echo "Clean complete."
+
+janitor:
+	@echo "Cleaning everything except final dist files..."
+	@echo "Removing build artifacts..."
+	rm -rf $(BUILD_DIR)
+	rm -f $(SPEC_FILE)
+	@echo "Removing Python cache files..."
+	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	find . -type f -name "*.pyo" -delete 2>/dev/null || true
+	find . -type f -name "*.pyd" -delete 2>/dev/null || true
+	find . -type f -name "*$$py.class" -delete 2>/dev/null || true
+	@echo "Removing test and coverage artifacts..."
+	rm -rf htmlcov/
+	rm -rf .pytest_cache/
+	rm -rf .coverage .coverage.*
+	rm -rf coverage.xml
+	rm -rf .tox/ .nox/
+	rm -rf .hypothesis/
+	rm -rf cover/
+	find . -type f -name "*.cover" -delete 2>/dev/null || true
+	find . -type f -name "*.py,cover" -delete 2>/dev/null || true
+	@echo "Removing type checking cache..."
+	rm -rf .mypy_cache/
+	rm -f .dmypy.json dmypy.json
+	@echo "Removing distribution artifacts (except dist/)..."
+	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name "dist" -not -path "./dist" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name "build" -not -path "./build" -exec rm -rf {} + 2>/dev/null || true
+	@echo "Removing other cache files..."
+	rm -rf .cache/
+	rm -rf .ruff_cache/
+	rm -rf .pytype/
+	rm -rf .pyre/
+	@echo "Janitor complete. Dist files preserved in $(DIST_DIR)/"
 
 distclean: clean
 	@echo "Removing distribution files..."
