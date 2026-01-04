@@ -77,3 +77,6 @@ fail_under = 80
 
 [tool.ruff]
 # Ruff configuration is in ruff.toml
+
+[tool.setuptools.packages.find]
+where = ["hp12c"]
