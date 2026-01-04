@@ -56,7 +56,7 @@ jobs:
           # Create a zip file of the .app bundle
           zip -r ${GITHUB_REF_NAME}-macos.zip hp12c.app
           # Also create a .dmg if needed (optional)
-          # hdiutil create -volname "HP12C" -srcfolder hp12c.app -ov -format UDZO ${GITHUB_REF_NAME}-macos.dmg
+          hdiutil create -volname "HP12C" -srcfolder hp12c.app -ov -format UDZO ${GITHUB_REF_NAME}-macos.dmg
 
       - name: Prepare artifacts (Windows)
         if: matrix.platform == 'windows'
@@ -83,7 +83,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: dist/*.zip
+          path: |
+            dist/*.zip
+            dist/*.dmg
           retention-days: 30
 
       - name: Upload Windows artifact
