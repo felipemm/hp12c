@@ -7,11 +7,14 @@ This script automates the process of:
 2. Updating pyproject.toml
 3. Updating hp12c/__init__.py
 4. Updating CHANGELOG.md
-5. Creating a git commit and tag
+5. Creating a git commit and signed tag
 6. Optionally pushing to GitHub
 
 Usage:
     python scripts/bump_version.py [major|minor|patch] [--no-commit] [--no-tag] [--no-push]
+
+Note: This script creates signed git tags. Make sure you have GPG configured:
+    git config user.signingkey <your-gpg-key-id>
 """
 
 import argparse
@@ -184,17 +187,21 @@ def git_commit(version: str) -> None:
 
 
 def git_tag(version: str) -> None:
-    """Create a git tag for the version."""
+    """Create a signed git tag for the version."""
     tag_name = f"v{version}"
     try:
         subprocess.run(
-            ["git", "tag", "-a", tag_name, "-m", f"Release {version}"],
+            ["git", "tag", "-s", "-a", tag_name, "-m", f"Release {version}"],
             check=True,
             capture_output=True,
         )
-        print(f"✓ Created git tag {tag_name}")
+        print(f"✓ Created signed git tag {tag_name}")
     except subprocess.CalledProcessError as e:
-        print(f"✗ Error creating git tag: {e.stderr.decode()}")
+        error_msg = e.stderr.decode() if e.stderr else "Unknown error"
+        print(f"✗ Error creating git tag: {error_msg}")
+        if "gpg" in error_msg.lower() or "sign" in error_msg.lower():
+            print("⚠ Note: Make sure you have GPG configured for signing tags.")
+            print("   You can configure it with: git config user.signingkey <your-key-id>")
         raise
 
 

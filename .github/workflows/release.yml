@@ -40,9 +40,9 @@ jobs:
 
       - name: Build application
         run: |
-          if [ "${{ matrix.platform }}" == "macos" ]; then
+          if [ "${{ matrix.platform }}" = "macos" ]; then
             make build-macos
-          elif [ "${{ matrix.platform }}" == "windows" ]; then
+          elif [ "${{ matrix.platform }}" = "windows" ]; then
             make build-windows
           else
             make build-linux

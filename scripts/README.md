@@ -11,7 +11,7 @@ Automates the process of bumping the project version and creating a release.
 - Bumps version in `pyproject.toml` and `hp12c/__init__.py`
 - Updates `CHANGELOG.md` by moving the `[Unreleased]` section to a versioned section
 - Creates a git commit with the version changes
-- Creates a git tag for the release
+- Creates a signed git tag for the release
 - Optionally pushes to the remote repository
 
 ### Usage
@@ -75,7 +75,7 @@ make bump-version TYPE=patch NO_PUSH=1
    - Update version in `pyproject.toml` and `hp12c/__init__.py`
    - Move `[Unreleased]` section to a versioned section in `CHANGELOG.md`
    - Create a git commit
-   - Create a git tag (e.g., `v0.1.1`)
+   - Create a signed git tag (e.g., `v0.1.1`)
    - Push to remote (which triggers the GitHub Actions release workflow)
 
 3. **GitHub Actions**: When you push the tag, the `.github/workflows/release.yml` workflow will:
@@ -87,11 +87,40 @@ make bump-version TYPE=patch NO_PUSH=1
 
 - Python 3.10+
 - Git
+- GPG configured for signing tags (see setup below)
 - All changes should be committed before bumping (except the version changes themselves)
+
+### GPG Setup for Signed Tags
+
+The script creates signed git tags for security. To set up GPG signing:
+
+1. **Generate a GPG key** (if you don't have one):
+   ```bash
+   gpg --full-generate-key
+   ```
+
+2. **List your GPG keys** to get the key ID:
+   ```bash
+   gpg --list-secret-keys --keyid-format LONG
+   ```
+
+3. **Configure git to use your GPG key**:
+   ```bash
+   git config user.signingkey <your-key-id>
+   git config commit.gpgsign true  # Optional: sign all commits
+   ```
+
+4. **Test your setup**:
+   ```bash
+   git tag -s test-tag -m "Test signed tag"
+   git tag -v test-tag  # Verify the tag
+   git tag -d test-tag   # Delete test tag
+   ```
 
 ### Notes
 
 - The script follows [Semantic Versioning](https://semver.org/)
-- Tags are created in the format `v<version>` (e.g., `v0.1.1`)
+- Tags are created in the format `v<version>` (e.g., `v0.1.1`) and are **signed** with GPG
 - The script will fail if there are uncommitted changes (except for the version files)
+- The script will fail if GPG is not configured for signing tags
 - Make sure your `CHANGELOG.md` follows the [Keep a Changelog](https://keepachangelog.com/) format
