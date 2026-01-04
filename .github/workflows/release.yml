@@ -39,6 +39,7 @@ jobs:
           pip install pyinstaller
 
       - name: Build application
+        shell: bash
         run: |
           if [ "${{ matrix.platform }}" = "macos" ]; then
             make build-macos
