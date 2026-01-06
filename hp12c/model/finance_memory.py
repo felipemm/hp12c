@@ -451,6 +451,8 @@ class FinanceMemory:
         u = 1.0 + i / 100.0
         cont = 0.0
         expo = 0.0
+        if cf is None:
+            return 0.0
         if len(cf) < n:
             return 0.0
         a = 0

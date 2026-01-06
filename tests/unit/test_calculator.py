@@ -253,3 +253,113 @@ class TestCalculator:
 
         with pytest.raises(CalculatorException):
             calculator.process_key(Key.KEY_DIV)
+
+    def test_npv_calculation(self, calculator):
+        """Test NPV calculation with cash flows."""
+        # Test case: CF0=-80000, CF1=35000, CF2=50000, CF3=65000, I=15%
+        # Expected NPV: 30980.52
+
+        # Step 1: Enter 80000 -> CHS -> g -> PV (CF0)
+        calculator.process_key(Key.KEY_8)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_CHS)  # Change sign to -80000
+        calculator.process_key(Key.KEY_G)  # Gold key
+        calculator.process_key(Key.KEY_PV)  # Store as CF0
+
+        # Step 2: Enter 35000 -> g -> PMT (CFj)
+        calculator.process_key(Key.KEY_3)
+        calculator.process_key(Key.KEY_5)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_G)  # Gold key
+        calculator.process_key(Key.KEY_PMT)  # Store as CFj (increments N)
+
+        # Step 3: Enter 50000 -> g -> PMT (CFj)
+        calculator.process_key(Key.KEY_5)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_G)  # Gold key
+        calculator.process_key(Key.KEY_PMT)  # Store as CFj (increments N)
+
+        # Step 4: Enter 65000 -> g -> PMT (CFj)
+        calculator.process_key(Key.KEY_6)
+        calculator.process_key(Key.KEY_5)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_G)  # Gold key
+        calculator.process_key(Key.KEY_PMT)  # Store as CFj (increments N)
+
+        # Step 5: Enter 15 -> i (set interest rate)
+        calculator.process_key(Key.KEY_1)
+        calculator.process_key(Key.KEY_5)
+        calculator.process_key(Key.KEY_I)  # Set interest rate to 15%
+
+        # Step 6: f -> PV (NPV calculation)
+        calculator.process_key(Key.KEY_F)  # Function key
+        calculator.process_key(Key.KEY_PV)  # Calculate NPV
+
+        # Verify result
+        result = calculator.get_stack().get(0)
+        expected = Number("30980.52")
+        # Allow small floating point differences
+        assert abs(result.d() - expected.d()) < 0.01, f"Expected {expected.d()}, got {result.d()}"
+
+    def test_irr_calculation(self, calculator):
+        """Test IRR calculation with cash flows."""
+        # Test case: CF0=-2000, CF1=1000, CF2=800, CF3=600, CF4=200
+        # Expected IRR: ~14.49%
+
+        # Step 1: Enter 2000 -> CHS -> g -> PV (CF0)
+        calculator.process_key(Key.KEY_2)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_CHS)  # Change sign to -2000
+        calculator.process_key(Key.KEY_G)  # Gold key
+        calculator.process_key(Key.KEY_PV)  # Store as CF0
+
+        # Step 2: Enter 1000 -> g -> PMT (CFj)
+        calculator.process_key(Key.KEY_1)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_G)  # Gold key
+        calculator.process_key(Key.KEY_PMT)  # Store as CFj (increments N)
+
+        # Step 3: Enter 800 -> g -> PMT (CFj)
+        calculator.process_key(Key.KEY_8)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_G)  # Gold key
+        calculator.process_key(Key.KEY_PMT)  # Store as CFj (increments N)
+
+        # Step 4: Enter 600 -> g -> PMT (CFj)
+        calculator.process_key(Key.KEY_6)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_G)  # Gold key
+        calculator.process_key(Key.KEY_PMT)  # Store as CFj (increments N)
+
+        # Step 5: Enter 200 -> g -> PMT (CFj)
+        calculator.process_key(Key.KEY_2)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_0)
+        calculator.process_key(Key.KEY_G)  # Gold key
+        calculator.process_key(Key.KEY_PMT)  # Store as CFj (increments N)
+
+        # Step 6: f -> FV (IRR calculation)
+        calculator.process_key(Key.KEY_F)  # Function key
+        calculator.process_key(Key.KEY_FV)  # Calculate IRR
+
+        # Verify result
+        result = calculator.get_stack().get(0)
+        expected = Number("14.49")
+        # Allow small floating point differences (IRR can have some variance)
+        assert abs(result.d() - expected.d()) < 0.1, f"Expected ~{expected.d()}%, got {result.d()}%"

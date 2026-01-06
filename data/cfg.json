@@ -1,8 +1,8 @@
 {
   "version": "0.1.3",
   "size": 1.25,
-  "xpos": 58,
-  "ypos": 39,
+  "xpos": 0,
+  "ypos": 0,
   "skin": "aurum",
   "lang": "en",
   "ui_framework": "tkinter",
@@ -10,10 +10,10 @@
   "memsize": 20,
   "prgsize": 100,
   "c": 0,
-  "dmy": 1,
+  "dmy": 0,
   "com": 0,
   "alg": 0,
-  "beg": 1,
-  "fix": 1,
+  "beg": 0,
+  "fix": 2,
   "mode": 0
 }

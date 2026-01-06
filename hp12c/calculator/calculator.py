@@ -749,7 +749,8 @@ class Calculator:
     def do_key_13(self):
         """Handle key PV."""
         if self._flg.get_f() == 1:
-            # NPV - simplified
+            # NPV calculation - matches Java implementation
+            self._stk.set(0, self._fin.npv(self._mem.get_array()))
             self._flg.toggle_f()
             self._dsp.set_status(2)
         elif self._flg.get_g() == 1:
@@ -804,7 +805,8 @@ class Calculator:
     def do_key_15(self):
         """Handle key FV."""
         if self._flg.get_f() == 1:
-            # IRR - simplified
+            # IRR calculation - matches Java implementation
+            self._stk.set(0, self._fin.irr(self._mem.get_array()))
             self._flg.toggle_f()
             self._dsp.set_status(2)
         elif self._flg.get_g() == 1:
